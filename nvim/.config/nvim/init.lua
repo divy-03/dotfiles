@@ -1,0 +1,6 @@
+vim.api.nvim_set_hl(0, "Function", {fg = "#89b4fa"})
+vim.api.nvim_set_hl(0, "@keyword", {fg = "#f38ba8", bold=true})
+vim.api.nvim_set_hl(0, "@string", {fg = "#a6e3a1"})
+vim.api.nvim_set_hl(0, "@comment", {fg = "#6c7086", italic=true})
+vim.api.nvim_set_hl(0, "Normal", {bg = "none"})
+vim.api.nvim_set_hl(0, "NormalFloat", {bg = "none"})
