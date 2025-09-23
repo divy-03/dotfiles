@@ -55,6 +55,8 @@
 # ---------------------------
 export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
 
+export VISUAL=nvim
+export EDITOR=nvim
 # ---------------------------
 # ZSH Options
 # ---------------------------
