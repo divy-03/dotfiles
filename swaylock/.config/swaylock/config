@@ -1,0 +1,24 @@
+
+# ~/.config/swaylock/config
+
+# Background image
+image = ~/Downloads/divy_lock.png
+
+# Indicator (the circle around password input)
+indicator-radius = 200
+indicator-thickness = 15
+indicator-circle = true
+
+# Ring colors
+ring-color = 00000088
+ring-ver-color = 000000cc
+ring-wrong-color = ff000088  # optional, red when wrong
+
+# Inside colors
+inside-color = 00000044
+inside-ver-color = 00000088
+inside-wrong-color = ff000088  # optional, red when wrong
+
+# Text color (for failed attempts feedback)
+text-color = ffffffcc
+
