@@ -90,6 +90,8 @@ zstyle :compinstall filename "$HOME/.zshrc"
 # Change config file/theme if you like
 eval "$(oh-my-posh init zsh --config ~/.cache/oh-my-posh/themes/paradox.omp.json)"
 
+eval "$(zoxide init zsh)"
+
 # ---------------------------
 # Plugins
 # ---------------------------
