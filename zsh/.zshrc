@@ -92,6 +92,14 @@ eval "$(oh-my-posh init zsh --config ~/.cache/oh-my-posh/themes/paradox.omp.json
 
 eval "$(zoxide init zsh)"
 
+function y() {
+	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+	yazi "$@" --cwd-file="$tmp"
+	IFS= read -r -d '' cwd < "$tmp"
+	[ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+	rm -f -- "$tmp"
+}
+
 # ---------------------------
 # Plugins
 # ---------------------------
