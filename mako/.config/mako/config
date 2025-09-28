@@ -1,0 +1,17 @@
+# Position
+anchor=top-right
+
+# Timeout in milliseconds
+default-timeout=5000
+
+# Style
+background-color=#1e1e2e
+text-color=#cdd6f4
+border-color=#89b4fa
+border-size=2
+border-radius=8
+padding=12
+font=JetBrainsMono Nerd Font 12
+
+# Max visible notifications
+max-visible=5
