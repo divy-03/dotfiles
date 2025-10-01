@@ -2,7 +2,7 @@
 # ~/.config/swaylock/config
 
 # Background image
-image = ~/Downloads/divy_lock.png
+image = ~/Pictures/downloads/divy_lock.png
 
 # Indicator (the circle around password input)
 indicator-radius = 200

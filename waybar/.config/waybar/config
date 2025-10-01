@@ -152,6 +152,6 @@
     "custom/powermenu": {
         "format": "⏻ ",
         "tooltip": false,
-        "on-click": "swaylock --image $HOME/Downloads/divy_lock.png --indicator-radius 100 --indicator-thickness 10 --ring-color 00000088 --ring-ver-color 000000cc --inside-color 00000044 --inside-ver-color 00000088 --text-color ffffffcc"
+        "on-click": "swaylock --image $HOME/Pictures/downloads/divy_lock.png --indicator-radius 100 --indicator-thickness 10 --ring-color 00000088 --ring-ver-color 000000cc --inside-color 00000044 --inside-ver-color 00000088 --text-color ffffffcc"
     }
 }
