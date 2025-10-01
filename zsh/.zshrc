@@ -101,6 +101,11 @@ function y() {
 }
 
 # ---------------------------
+# Aliases
+# ---------------------------
+alias lg="lazygit"
+
+# ---------------------------
 # Plugins
 # ---------------------------
 # Autosuggestions (inline grey text)
