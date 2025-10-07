@@ -104,6 +104,7 @@ function y() {
 # Aliases
 # ---------------------------
 alias lg="lazygit"
+alias neofetch="fastfetch"
 
 # ---------------------------
 # Plugins
