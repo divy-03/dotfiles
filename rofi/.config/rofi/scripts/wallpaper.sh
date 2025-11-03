@@ -15,11 +15,11 @@ selected_wallpaper=$(find "$WALLPAPER_DIR" -maxdepth 1 -type f \
 if [[ "$selected_wallpaper" == *.gif ]]; then
   swww img "$selected_wallpaper" --transition-type none
 else
-  swww img "$selected_wallpaper" --transition-type random --transition-fps 60 --transition-duration 1
+  swww img "$selected_wallpaper" --transition-type any --transition-fps 60 --transition-duration 1
 fi
 
 # Optionally notify (requires notify-send / libnotify)
-if command -v notify-send &>/dev/null; then
-  basename=$(basename "$selected_wallpaper")
-  notify-send "🖼 Wallpaper Changed" "$basename applied successfully"
-fi
+#if command -v notify-send &>/dev/null; then
+#  basename=$(basename "$selected_wallpaper")
+#  notify-send "🖼 Wallpaper Changed" "$basename applied successfully"
+#fi
