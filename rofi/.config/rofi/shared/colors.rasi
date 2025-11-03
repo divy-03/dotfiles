@@ -15,7 +15,7 @@
 
 /* Import color-scheme from `colors` directory */
 
-@import "~/.config/rofi/colors/onedark.rasi"
+/** @import "~/.config/rofi/colors/onedark.rasi" **/
 
 * {
     background:     #1E2127FF;

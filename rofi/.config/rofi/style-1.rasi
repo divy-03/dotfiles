@@ -7,20 +7,7 @@
  * Rofi Version: 1.7.3
  **/
 
-/*****----- Configuration -----*****/
-configuration {
-	modi:                       "drun";
-    show-icons:                 true;
-    icon-theme: 				"WhiteSur";
-    display-drun:               "";
-    display-run:                "";
-    display-filebrowser:        "";
-    display-window:             "";
-    display-emoji:              "󰞅";
-    display-clipboard:          "";
-	drun-display-format:        "{name}";
-    window-format:              "{t}";
-}
+
 
 /*****----- Global Properties -----*****/
 @import                          "shared/colors.rasi"
