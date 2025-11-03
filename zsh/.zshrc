@@ -105,6 +105,7 @@ function y() {
 # ---------------------------
 alias lg="lazygit"
 alias neofetch="fastfetch"
+alias hypr="nvim ~/dotfiles/hyprland/.config/hypr/hyprland.conf"
 
 # ---------------------------
 # Plugins
