@@ -103,7 +103,3 @@ decorations = "none"
 [window.dimensions]
 columns = 100
 lines = 24
-
-[window.padding]
-x = 20
-y = 20
