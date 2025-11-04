@@ -1,15 +1,26 @@
 #!/usr/bin/env bash
 
-WALLPAPER_DIR="$HOME/Pictures/wallpapers"
+WALLPAPER_DIR="$HOME/Pictures/wallpapers/walls-catppuccin-mocha"
 
-# Find images (jpg, png, jpeg, gif)
-selected_wallpaper=$(find "$WALLPAPER_DIR" -maxdepth 1 -type f \
+# Get a list of image files (jpg, jpeg, png, gif)
+mapfile -t images < <(find "$WALLPAPER_DIR" -maxdepth 1 -type f \
   \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" \) |
-  sort |
-  rofi -dmenu -i -p "🖼 Choose wallpaper:")
+  sort)
+
+# Extract filenames for rofi display
+filenames=()
+for img in "${images[@]}"; do
+  filenames+=("$(basename "$img")")
+done
+
+# Let user select a filename
+selected_name=$(printf '%s\n' "${filenames[@]}" | rofi -dmenu -i -p "🖼 Choose wallpaper:")
 
 # Exit if no selection
-[ -z "$selected_wallpaper" ] && exit 0
+[ -z "$selected_name" ] && exit 0
+
+# Get the full path that matches the chosen filename
+selected_wallpaper=$(printf '%s\n' "${images[@]}" | grep "/$selected_name$")
 
 # If it's a GIF, set without transition (to avoid flickering)
 if [[ "$selected_wallpaper" == *.gif ]]; then
