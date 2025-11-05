@@ -2,13 +2,14 @@
 configuration {
     modi: "drun,run,wallpaper:~/.config/rofi/scripts/wallpaper.sh";
     show-icons:                 true;
-    icon-theme: "Papirus";
+    icon-theme:                 "Papirus";
     display-drun:               "";
     display-run:                "";
     display-filebrowser:        "";
     display-window:             "";
     display-emoji:              "󰞅";
     display-clipboard:          "";
+    display-wallpaper:          "🖼";
     drun-display-format:        "{name}";
     window-format:              "{t}";
 }
