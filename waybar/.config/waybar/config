@@ -152,6 +152,6 @@
     "custom/powermenu": {
         "format": "⏻ ",
         "tooltip": false,
-        "on-click": "hyprlock"
+        "on-click": "wlogout"
     }
 }
