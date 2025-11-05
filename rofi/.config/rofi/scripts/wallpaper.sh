@@ -14,7 +14,7 @@ for img in "${images[@]}"; do
 done
 
 # Let user select a filename
-selected_name=$(printf '%s\n' "${filenames[@]}" | rofi -dmenu -i -p "🖼 Choose wallpaper:")
+selected_name=$(printf '%s\n' "${filenames[@]}" | rofi -dmenu -i -p "🖼")
 
 # Exit if no selection
 [ -z "$selected_name" ] && exit 0

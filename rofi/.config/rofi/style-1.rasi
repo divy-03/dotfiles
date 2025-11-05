@@ -10,8 +10,15 @@
 
 
 /*****----- Global Properties -----*****/
-@import                          "shared/colors.rasi"
+@import                          "shared/mocha.rasi"
 @import                          "shared/fonts.rasi"
+
+* {
+    background:                  @base;
+    background-alt:              @surface0;
+    foreground:                  @text;
+    selected:                    @lavender;
+}
 
 /*****----- Main Window -----*****/
 window {
