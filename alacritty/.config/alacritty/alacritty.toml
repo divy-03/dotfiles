@@ -78,7 +78,7 @@ text = "#1E1E2E"
 size = 12
 
 [font.bold]
-family = "Monocraft"
+family = "FiraCode Nerd Font Propo"
 style = "Bold"
 
 [font.glyph_offset]
@@ -86,11 +86,11 @@ x = 0
 y = 0
 
 [font.italic]
-family = "Monocraft"
+family = "FiraCode Nerd Font SemBd"
 style = "Italic"
 
 [font.normal]
-family = "Monocraft"
+family = "FiraCode Nerd Font"
 style = "Regular"
 
 [font.offset]
