@@ -16,7 +16,6 @@
     "modules-right": [
         "tray",
         "memory",
-        "network",
         "pulseaudio",
         "battery",
         "custom/powermenu"
@@ -71,25 +70,6 @@
         "tooltip-format": "<tt>{calendar}</tt>",
         "format-alt": "   {:%a, %d %b %Y} ",
         "format": "   {:%I:%M %p} "
-    },
-    "network": {
-        "format-wifi": "{icon}",
-        "format-disconnected": "󰤭 ",
-        "format-icons": [
-            "󰤯 ",
-            "󰤟 ",
-            "󰤢 ",
-            "󰤥 ",
-            "󰤨 "
-        ],
-        "tooltip-format-disconnected": "Disconnected",
-        "tooltip-format-wifi": "{icon} {essid}\n⇣{bandwidthDownBytes}  ⇡{bandwidthUpBytes}",
-        "on-click": "~/.config/rofi/wifi/wifi.sh &",
-        "on-click-right": "~/.config/rofi/wifi/wifinew.sh &",
-        "format-ethernet": "󰀂",
-        "tooltip-format-ethernet": "󰀂  {ifname}\n⇣{bandwidthDownBytes}  ⇡{bandwidthUpBytes}",
-        "nospacing": 1,
-        "interval": 5
     },
     "pulseaudio": {
         "format": "{icon}",
