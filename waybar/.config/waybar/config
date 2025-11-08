@@ -95,7 +95,7 @@
         "on-click": "~/.config/rofi/launchers/misc/launcher.sh &"
     },
     "battery": {
-        "format": "{capacity}% {icon}",
+        "format": "{icon} {capacity}%",
         "format-icons": {
             "charging": [
                 "󰢜",
