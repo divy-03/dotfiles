@@ -124,3 +124,5 @@ source ~/.zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 [ -f /usr/share/fzf/shell/completion.zsh ] && source /usr/share/fzf/shell/completion.zsh
 
 export PATH="$HOME/.cargo/bin:$PATH"
+
+export PATH=$PATH:/home/divy/.spicetify
