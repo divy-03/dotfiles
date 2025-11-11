@@ -35,13 +35,15 @@ That’s it. Stow handles all the symlinks for you. 🙌
 ---
 
 ## 🖼️ Screenshots
+|   #   | Preview                                                                                                                                                       | Description                                                                                  |
+| :---: | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------- |
+| **1** | <img width="1921" height="1081" alt="screenshot-2025-11-05_20-59-15" src="https://github.com/user-attachments/assets/552761c3-e9bf-490b-aefc-e21c5dc33d84" /> | 🖼 **Rofi Wallpaper Launcher** — pick your wallpaper instantly with previews.                |
+| **2** | <img width="1921" height="1081" alt="screenshot-2025-11-05_21-37-20" src="https://github.com/user-attachments/assets/5b0425b3-afcb-4eac-ad48-be63f143ca17" /> | 🚀 **Rofi App Launcher** — clean and minimal interface for quick app access.                 |
+| **3** | <img width="1921" height="1081" alt="screenshot-2025-11-05_21-41-01" src="https://github.com/user-attachments/assets/cc2102f8-2e09-4407-89b8-b8ed437d504f" /> | 🔒 **Wlogout** — sleek logout menu with blur and icons.                                      |
+| **4** | <img width="1921" height="1081" alt="screenshot-2025-11-05_21-42-52" src="https://github.com/user-attachments/assets/09f819d2-0218-4d22-9de5-be96e8d9105b" /> | 🖥 **Terminal Setup** — `btop++`, `cava`, and `fastfetch` for system stats & vibes.          |
+| **5** | <img width="1921" height="1081" alt="screenshot-2025-11-11_19-09-56" src="https://github.com/user-attachments/assets/1fd2141c-cd91-4444-8f44-53b7830f80e7" /> | 🎵 **Cava + Spotify + Mako** — Music with visualizer and notification all in Catppuccin theme. |
 
-|   #   | Preview                                                                                                                                                       | Description                                                                         |
-| :---: | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :---------------------------------------------------------------------------------- |
-| **1** | <img width="1921" height="1081" alt="screenshot-2025-11-05_20-59-15" src="https://github.com/user-attachments/assets/552761c3-e9bf-490b-aefc-e21c5dc33d84" /> | 🖼 **Rofi Wallpaper Launcher** — pick your wallpaper instantly with previews.       |
-| **2** | <img width="1921" height="1081" alt="screenshot-2025-11-05_21-37-20" src="https://github.com/user-attachments/assets/5b0425b3-afcb-4eac-ad48-be63f143ca17" /> | 🚀 **Rofi App Launcher** — clean and minimal interface for quick app access.        |
-| **3** | <img width="1921" height="1081" alt="screenshot-2025-11-05_21-41-01" src="https://github.com/user-attachments/assets/cc2102f8-2e09-4407-89b8-b8ed437d504f" /> | 🔒 **Wlogout** — sleek logout menu with blur and icons.                             |
-| **4** | <img width="1921" height="1081" alt="screenshot-2025-11-05_21-42-52" src="https://github.com/user-attachments/assets/09f819d2-0218-4d22-9de5-be96e8d9105b" /> | 🖥 **Terminal Setup** — `btop++`, `cava`, and `fastfetch` for system stats & vibes. |
+
 
 ---
 
