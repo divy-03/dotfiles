@@ -100,13 +100,18 @@ function y() {
 	rm -f -- "$tmp"
 }
 
+function ff() {
+  clear
+  kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/Pictures/cat.gif | fastfetch --logo-width 30 --raw -
+}
+
 # ---------------------------
 # Aliases
 # ---------------------------
 alias lg="lazygit"
 alias neofetch="fastfetch"
 alias hypr="nvim ~/dotfiles/hyprland/.config/hypr/hyprland.conf"
-alias ff="fastfetch"
+# alias ff="fastfetch"
 
 # ---------------------------
 # Plugins
@@ -126,3 +131,12 @@ source ~/.zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 export PATH="$HOME/.cargo/bin:$PATH"
 
 export PATH=$PATH:/home/divy/.spicetify
+
+# Clear screen first (optional)
+clear
+
+# Show kitty image (icat) and run fastfetch
+kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/Pictures/cat.gif | fastfetch --logo-width 30 --raw -
+
+# Greeting
+figlet Welcome Divy | lolcat
