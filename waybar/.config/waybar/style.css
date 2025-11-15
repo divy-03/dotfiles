@@ -92,6 +92,7 @@ window#waybar.hidden {
 #pulseaudio,
 #custom-launcher,
 #custom-powermenu,
+#mpris,
 #tray {
   background-color: @crust;
   padding: 0em 2em;
@@ -118,6 +119,27 @@ window#waybar.hidden {
   font-size: 15px;
   border-radius: 8px 0px 0px 8px;
   color: #1793d1;
+}
+
+#mpris {
+  color: @green;
+  padding-left: 12px;
+  padding-right: 12px;
+  font-size: 13px;
+  border-radius: 8px 8px 8px 8px;
+}
+
+#mpris.playing {
+  color: @green;
+}
+
+#mpris.paused {
+  color: @yellow;
+  font-style: italic;
+}
+
+#mpris.stopped {
+  color: @overlay0;
 }
 
 #pulseaudio {

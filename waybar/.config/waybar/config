@@ -8,18 +8,45 @@
     "spacing": 0,
     "modules-left": [
         "custom/launcher",
-        "hyprland/workspaces"
+        "hyprland/workspaces",
     ],
     "modules-center": [
-        "clock"
+        "clock",
     ],
     "modules-right": [
+        "mpris",
         "tray",
         "memory",
         "pulseaudio",
         "battery",
-        "custom/powermenu"
+        "custom/powermenu",
     ],
+    "mpris": {
+        "format": "{player_icon} {dynamic}",
+        "format-paused": "{status_icon} {dynamic}",
+        "player-icons": {
+            "default": "",
+            "spotify": " ",
+            "firefox": "󰈹",
+            "chrome": "",
+        },
+        "status-icons": {
+            "playing": "▶",
+            "paused": "⏸"
+        },
+        "dynamic-order": ["title", "artist"],
+        "dynamic-separator": " - ",
+        "dynamic-len": 40,
+        "interval": 1,
+        "on-click": "playerctl play-pause",
+        "on-click-right": "playerctl next",
+        "on-click-middle": "playerctl previous",
+        "on-scroll-up": "playerctl volume 0.05+",
+        "on-scroll-down": "playerctl volume 0.05-",
+        "max-length": 50,
+        "tooltip": true,
+        "tooltip-format": "{player}\n{title}\n{artist}\n{album}"
+    },
     "wlr/taskbar": {
         "format": "{icon}",
         "on-click": "activate",
