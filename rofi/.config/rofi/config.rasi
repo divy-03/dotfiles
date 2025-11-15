@@ -12,6 +12,11 @@ configuration {
     display-wallpaper:          "🖼";
     drun-display-format:        "{name}";
     window-format:              "{t}";
+    kb-row-up: "Up,Control+k";
+    kb-row-down: "Down,Control+j";
+    kb-accept-entry: "Return,Control+m,KP_Enter";
+    kb-remove-to-eol: "";
+    kb-remove-char-back: "BackSpace";
 }
 
 @theme "~/.config/rofi/style-1.rasi"
