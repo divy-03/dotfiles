@@ -38,7 +38,7 @@ matches:
           cmd: "echo 'Hello from your shell'"
 
   - trigger: ":lip"
-    replace: "https://www.linkedin.com/in/divy-pathak-318599250"
+    replace: "https://www.linkedin.com/in/pathakdivy03"
   
   - trigger: ":ghp"
     replace: "https://github.com/divy-03"

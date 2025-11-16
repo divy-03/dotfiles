@@ -141,4 +141,4 @@ clear
 kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/Pictures/cat.gif | fastfetch --logo-width 30 --raw -
 
 # Greeting
-figlet Welcome Divy | lolcat
+# figlet Welcome Divy | lolcat

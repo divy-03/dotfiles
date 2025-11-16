@@ -8,9 +8,9 @@
 
   "control-center-layer": "top",
   "control-center-width": 380,
-  "control-center-height": 750, 
+  "control-center-height": 750,
   "control-center-margin-top": 10,
-  "control-center-margin-bottom": 0,
+  "control-center-margin-bottom": 10,
   "control-center-margin-right": 10,
   "control-center-margin-left": 0,
 
@@ -21,10 +21,13 @@
   "notification-body-image-width": 200,
   "notification-2fa-action": true,
   "notifications-inline-replies": true,
+  "notification-stack-limit": 2,
+  "stack-duplicates": true,
+  "stack-btn": true,
 
-  "timeout": 4,
-  "timeout-low": 4,
-  "timeout-critical": 4,
+  "timeout": 3,
+  "timeout-low": 2,
+  "timeout-critical": 2,
   
   "fit-to-screen": false,
   "relative-timestamps": true,
