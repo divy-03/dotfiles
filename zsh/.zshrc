@@ -111,6 +111,8 @@ function ff() {
 alias lg="lazygit"
 alias neofetch="fastfetch"
 alias hypr="nvim ~/dotfiles/hyprland/.config/hypr/hyprland.conf"
+alias nvo="nvim ."
+alias cls="clear"
 # alias ff="fastfetch"
 
 # ---------------------------
