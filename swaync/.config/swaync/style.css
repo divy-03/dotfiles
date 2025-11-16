@@ -170,14 +170,18 @@
 }
 
 .widget-mpris-title {
-  color: @crust;
+  color: @red;
   font-weight: bold;
   font-size: 15px;
+  text-shadow: 0px 4px 3px rgba(0,0,0,0.4),
+             0px 8px 13px rgba(0,0,0,0.1),
+             0px 18px 23px rgba(0,0,0,0.1);
 }
 
 .widget-mpris-subtitle {
-  color: @mantle;
+  color: @subtext1;
   font-size: 13px;
+  text-shadow: 2px 4px 3px alpha(@crust, 0.8);
 }
 
 .widget-mpris > box > button {
@@ -196,20 +200,23 @@
 
 /* Buttons and Controls */
 button {
-  background: @surface0;
-  color: @text;
+  background: none;
+  color: @red;
   border-radius: 6px;
   padding: 8px;
   transition: all 200ms ease;
+  text-shadow: 0px 4px 3px rgba(0,0,0,0.4),
+             0px 8px 13px rgba(0,0,0,0.1),
+             0px 18px 23px rgba(0,0,0,0.1);
 }
 
 button:hover {
-  background: @surface1;
-  color: @mauve;
+  background: alpha(@mauve, 0.1);
+  color: @flamingo;
 }
 
 button:active {
-  background: @surface2;
+  background: @flamingo;
 }
 
 /* Scrollbar */
