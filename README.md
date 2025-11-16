@@ -42,6 +42,7 @@ That’s it. Stow handles all the symlinks for you. 🙌
 | **3** | <img width="1921" height="1081" alt="screenshot-2025-11-05_21-41-01" src="https://github.com/user-attachments/assets/cc2102f8-2e09-4407-89b8-b8ed437d504f" /> | 🔒 **Wlogout** — sleek logout menu with blur and icons.                                      |
 | **4** | <img width="1921" height="1081" alt="screenshot-2025-11-05_21-42-52" src="https://github.com/user-attachments/assets/09f819d2-0218-4d22-9de5-be96e8d9105b" /> | 🖥 **Terminal Setup** — `btop++`, `cava`, and `fastfetch` for system stats & vibes.          |
 | **5** | <img width="1921" height="1081" alt="screenshot-2025-11-11_19-09-56" src="https://github.com/user-attachments/assets/1fd2141c-cd91-4444-8f44-53b7830f80e7" /> | 🎵 **Cava + Spotify + Mako** — Music with visualizer and notification all in Catppuccin theme. |
+| **6** | <img width="1921" height="1080" alt="screenshot-2025-11-17_00-12-35" src="https://github.com/user-attachments/assets/a9571c76-6a61-417a-8393-b98ed716b452" /> | 🔔 **Sway Notification Center** - Notifications with Mpris media controls. |
 
 
 
