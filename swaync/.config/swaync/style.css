@@ -1,0 +1,276 @@
+@import 'mocha.css';
+* {
+  all: unset;
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 14px;
+}
+
+/* Control Center */
+.control-center {
+  background: alpha(@base, 0.95);
+  border: 2px solid @surface0;
+  border-radius: 12px;
+  margin: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.control-center-list {
+  background: transparent;
+}
+
+.control-center-list-placeholder {
+  opacity: 0.5;
+}
+
+/* Notification Window */
+.notification-row {
+  outline: none;
+  margin: 8px;
+  padding: 0;
+}
+
+.notification-row:focus,
+.notification-row:hover {
+  background: alpha(@surface0, 0.5);
+  border-radius: 8px;
+}
+
+.notification {
+  background: alpha(@mantle, 0.95);
+  border: 2px solid @surface0;
+  border-radius: 10px;
+  margin: 0;
+  padding: 12px;
+}
+
+.notification-content {
+  background: transparent;
+  padding: 8px;
+}
+
+.notification-default-action,
+.notification-action {
+  background: transparent;
+  color: @text;
+  border-radius: 8px;
+  padding: 4px;
+  margin: 4px;
+}
+
+.notification-default-action:hover,
+.notification-action:hover {
+  background: @surface0;
+  color: @mauve;
+}
+
+/* Close button */
+.close-button {
+  background: @red;
+  color: @crust;
+  border-radius: 6px;
+  padding: 4px;
+  margin: 4px;
+}
+
+.close-button:hover {
+  background: @maroon;
+  color: @text;
+}
+
+/* Notification content */
+.summary {
+  font-weight: bold;
+  color: @mauve;
+  font-size: 15px;
+}
+
+.time {
+  color: @overlay0;
+  font-size: 12px;
+}
+
+.body {
+  color: @text;
+}
+
+.notification-icon {
+  margin-right: 12px;
+}
+
+.image {
+  margin-right: 12px;
+  border-radius: 8px;
+}
+
+/* Widget Styling */
+.widget-title {
+  background: alpha(@surface0, 0.8);
+  color: @mauve;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px;
+}
+
+.widget-title > button {
+  background: @red;
+  color: @crust;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: bold;
+}
+
+.widget-title > button:hover {
+  background: @maroon;
+  color: @text;
+}
+
+/* DND Widget */
+.widget-dnd {
+  background: alpha(@surface0, 0.8);
+  color: @text;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px;
+  font-weight: bold;
+}
+
+.widget-dnd > switch {
+  background: @surface1;
+  border-radius: 20px;
+  border: none;
+  min-width: 50px;
+  min-height: 26px;
+}
+
+.widget-dnd > switch:checked {
+  background: @mauve;
+}
+
+.widget-dnd > switch slider {
+  background: @text;
+  border-radius: 50%;
+  min-width: 20px;
+  min-height: 20px;
+  margin: 3px;
+}
+
+/* MPRIS Widget */
+.widget-mpris {
+  background: alpha(@surface0, 0.8);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 8px;
+}
+
+.widget-mpris-player {
+  background: transparent;
+  padding: 8px;
+}
+
+.widget-mpris-title {
+  color: @crust;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.widget-mpris-subtitle {
+  color: @mantle;
+  font-size: 13px;
+}
+
+.widget-mpris > box > button {
+  background: transparent;
+  color: @text;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 2px;
+  border: none;
+}
+
+.widget-mpris > box > button:hover {
+  background: alpha(@surface1, 0.5);
+  color: @mauve;
+}
+
+/* Buttons and Controls */
+button {
+  background: @surface0;
+  color: @text;
+  border-radius: 6px;
+  padding: 8px;
+  transition: all 200ms ease;
+}
+
+button:hover {
+  background: @surface1;
+  color: @mauve;
+}
+
+button:active {
+  background: @surface2;
+}
+
+/* Scrollbar */
+scrollbar {
+  background: transparent;
+}
+
+trough {
+  background: @surface0;
+  border-radius: 8px;
+}
+
+slider {
+  background: @mauve;
+  border-radius: 8px;
+  min-width: 8px;
+  min-height: 8px;
+}
+
+slider:hover {
+  background: @lavender;
+}
+
+/* Progress Bar */
+progressbar {
+  background: transparent;
+}
+
+progress {
+  background: @mauve;
+  border-radius: 4px;
+}
+
+trough {
+  background: @surface0;
+  border-radius: 4px;
+}
+
+/* Urgency levels */
+.notification.low {
+  border: 2px solid @green;
+}
+
+.notification.normal {
+  border: 2px solid @blue;
+}
+
+.notification.critical {
+  border: 2px solid @red;
+  background: alpha(@red, 0.15);
+}
+
+/* Inline replies */
+.inline-reply {
+  background: @surface0;
+  color: @text;
+  border-radius: 6px;
+  padding: 8px;
+  margin: 4px;
+}
+
+.inline-reply:focus {
+  border: 2px solid @mauve;
+}
