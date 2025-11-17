@@ -92,6 +92,7 @@ window#waybar.hidden {
 #pulseaudio,
 #custom-launcher,
 #custom-powermenu,
+#custom-swaync,
 #mpris,
 #tray {
   background-color: @crust;
@@ -119,6 +120,15 @@ window#waybar.hidden {
   font-size: 15px;
   border-radius: 8px 0px 0px 8px;
   color: #1793d1;
+}
+
+#custom-swaync {
+  padding-right: 0px;
+  padding-left: 10px;
+  margin-left: 0px;
+  margin-right: 0;
+  font-size: 15px;
+  color: @flamingo;
 }
 
 #mpris {

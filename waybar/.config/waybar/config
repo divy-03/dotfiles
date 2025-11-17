@@ -9,7 +9,6 @@
     "modules-left": [
         "custom/launcher",
         "hyprland/workspaces",
-        "custom/swaync",
     ],
     "modules-center": [
         "clock",
@@ -19,6 +18,7 @@
         "tray",
         "memory",
         "pulseaudio",
+        "custom/swaync",
         "battery",
         "custom/powermenu",
     ],
@@ -118,13 +118,13 @@
         "scroll-step": 1
     },
     "custom/launcher": {
-        "format": "  ",
+        "format": " ",
         "tooltip": false,
-        "on-click": "~/.config/rofi/launchers/misc/launcher.sh &"
+        "on-click": "rofi -show drun"
     },
     "custom/swaync": {
         "tooltip": true,
-	      "format": "{icon} {count}",
+	      "format": "<sup>{}</sup>",
 	      "format-icons": {
 		        "notification": "<span foreground='red'><sup></sup></span>",
 		        "none": "",
