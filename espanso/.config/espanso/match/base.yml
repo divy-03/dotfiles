@@ -43,8 +43,11 @@ matches:
   - trigger: ":ghp"
     replace: "https://github.com/divy-03"
 
+  - trigger: ":cp"
+    replace: "https://codeforces.com/profile/excl"
+
   - trigger: ":resume"
-    replace: "https://drive.google.com/file/d/16SxHLjGoPf6bwdcUNhUDG896H3hnwSiH/view?usp=sharing"
+    replace: "https://drive.google.com/file/d/1deC7iKx11o5MUPtwoeGA-Y5Q3GibLXBz/view?usp=sharing"
 
   - trigger: ":email"
     replace: "pathakdivy03@gmail.com"
