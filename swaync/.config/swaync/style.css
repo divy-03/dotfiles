@@ -156,6 +156,86 @@
   margin: 3px;
 }
 
+/* Power Buttons Grid */
+.widget-buttons-grid {
+  background: alpha(@surface0, 0.8);
+  border-radius: 10px;
+  padding: 8px;
+  margin: 8px;
+}
+
+.widget-buttons-grid > flowbox {
+  padding: 0;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild {
+  padding: 2px;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button {
+  background: alpha(@mantle, 0.95);
+  border: 2px solid @surface1;
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 40px;
+  min-height: 40px;
+  font-size: 18px;
+  color: @mauve;
+  transition: all 200ms ease;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button:hover {
+  background: alpha(@mauve, 0.2);
+  border-color: @mauve;
+  color: @text;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button:active {
+  background: @mauve;
+  color: @crust;
+}
+
+/* Individual button colors */
+.widget-buttons-grid > flowbox > flowboxchild:nth-child(1) > button {
+  color: @red;
+}
+.widget-buttons-grid > flowbox > flowboxchild:nth-child(1) > button:hover {
+  background: alpha(@red, 0.2);
+  border-color: @red;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild:nth-child(2) > button {
+  color: @peach;
+}
+.widget-buttons-grid > flowbox > flowboxchild:nth-child(2) > button:hover {
+  background: alpha(@peach, 0.2);
+  border-color: @peach;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild:nth-child(3) > button {
+  color: @yellow;
+}
+.widget-buttons-grid > flowbox > flowboxchild:nth-child(3) > button:hover {
+  background: alpha(@yellow, 0.2);
+  border-color: @yellow;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild:nth-child(4) > button {
+  color: @green;
+}
+.widget-buttons-grid > flowbox > flowboxchild:nth-child(4) > button:hover {
+  background: alpha(@green, 0.2);
+  border-color: @green;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild:nth-child(5) > button {
+  color: @blue;
+}
+.widget-buttons-grid > flowbox > flowboxchild:nth-child(5) > button:hover {
+  background: alpha(@blue, 0.2);
+  border-color: @blue;
+}
+
 /* MPRIS Widget */
 .widget-mpris {
   background: alpha(@surface0, 0.8);

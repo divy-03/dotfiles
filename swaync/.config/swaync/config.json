@@ -28,7 +28,7 @@
   "timeout": 3,
   "timeout-low": 2,
   "timeout-critical": 2,
-  
+
   "fit-to-screen": false,
   "relative-timestamps": true,
   "keyboard-shortcuts": true,
@@ -38,6 +38,7 @@
   "hide-on-action": true,
   "script-fail-notify": true,
   "widgets": [
+    "buttons-grid",
     "mpris",
     "dnd",
     "title",
@@ -58,7 +59,31 @@
     "mpris": {
       "image-size": 76,
       "image-radius": 10
-    }
+    },
 
+    "buttons-grid": {
+      "actions": [
+        {
+          "label": "󰐥",
+          "command": "systemctl poweroff"
+        },
+        {
+          "label": "󰜉",
+          "command": "systemctl reboot"
+        },
+        {
+          "label": "󰤄",
+          "command": "systemctl suspend"
+        },
+        {
+          "label": "󰍃",
+          "command": "loginctl terminate-user $USER"
+        },
+        {
+          "label": "󰌾",
+          "command": "hyprlock"
+        }
+      ]
+    }
   }
 }
