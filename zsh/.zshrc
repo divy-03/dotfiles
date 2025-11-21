@@ -102,7 +102,7 @@ function y() {
 
 function ff() {
   clear
-  kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/Pictures/cat.gif | fastfetch --logo-width 30 --raw -
+  kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/.config/fastfetch/cat.gif | fastfetch --logo-width 30 --raw -
 }
 
 # ---------------------------
@@ -138,7 +138,7 @@ export PATH=$PATH:/home/divy/.spicetify
 clear
 
 # Show kitty image (icat) and run fastfetch
-kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/Pictures/cat.gif | fastfetch --logo-width 30 --raw -
+kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/.config/fastfetch/cat.gif | fastfetch --logo-width 30 --raw -
 
 # Greeting
 # figlet Welcome Divy | lolcat

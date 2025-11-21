@@ -124,7 +124,7 @@
     },
     "custom/swaync": {
         "tooltip": true,
-	      "format": "<sup>{}</sup>",
+	      "format": "<sup>{}</sup>",
 	      "format-icons": {
 		        "notification": "<span foreground='red'><sup></sup></span>",
 		        "none": "",
