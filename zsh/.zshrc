@@ -113,6 +113,7 @@ alias neofetch="fastfetch"
 alias hypr="nvim ~/dotfiles/hyprland/.config/hypr/hyprland.conf"
 alias nvo="nvim ."
 alias cls="clear"
+alias ldo="lazydocker"
 # alias ff="fastfetch"
 
 # ---------------------------
