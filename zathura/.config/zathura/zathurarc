@@ -1,0 +1,31 @@
+set statusbar-h-padding 0
+set statusbar-v-padding 0
+set page-padding 1
+
+map D toggle_page_mode
+map <C-f> display_link
+map F follow
+map f toggle_fullscreen
+
+map u scroll half-up
+map d scroll half-down
+map K zoom in
+map J zoom out
+map r reload
+map R rotate
+map a adjust_window width
+map t adjust_window best-fit
+
+map [fullscreen] D toggle_page_mode
+map [fullscreen] <C-f> display_link
+map [fullscreen] F follow
+map [fullscreen] f toggle_fullscreen
+
+map [fullscreen] u scroll half-up
+map [fullscreen] d scroll half-down
+map [fullscreen] K zoom in
+map [fullscreen] J zoom out
+map [fullscreen] r reload
+map [fullscreen] R rotate
+map [fullscreen] a adjust_window width
+map [fullscreen] t adjust_window best-fit
