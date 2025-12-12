@@ -60,5 +60,11 @@ matches:
 
   - trigger: ":skl"
     replace: "TypeScript, Express, Docker, Linux, CI/CD, Express.js, Redis, ReactJs, NextJs, JWT, Python, FastAPI, React-Native, PostgreSQL, MySQL, Prisma, MongoDB, Redux, SASS, Tailwindcss, GraphQL, Nginx, Web3, Prometheus, Loki, Graphana, WebSockets, Socket.io, RabbitMQ, Kafka, Jest, MCP Server"
+
+  - trigger: ":neo"
+    replace: "NEO709862"
+
+  - trigger: ":pf"
+    replace: "https://termfolio-three.vercel.app"
   
   # And much more! For more information, visit the docs: https://espanso.org/docs/
