@@ -1,0 +1,47 @@
+window#osd {
+  border-radius: 10px;
+  border: 2px solid #45475a; /* surface1 */
+  background: rgba(30, 30, 46, 0.88); /* base */
+}
+
+window#osd #container {
+  margin: 6px;
+  padding: 2px;
+  background: transparent;
+}
+
+window#osd image {
+  -gtk-icon-transform: scale(0.7);
+}
+
+window#osd image,
+window#osd label {
+  color: #cba6f7; /* mauve */
+}
+
+window#osd progressbar:disabled,
+window#osd image:disabled {
+  opacity: 0.45;
+}
+
+window#osd progressbar {
+  min-height: 6px;
+  border-radius: 999px;
+  background: transparent;
+  border: none;
+}
+
+window#osd trough {
+  min-height: inherit;
+  border-radius: inherit;
+  border: none;
+  background: rgba(203, 166, 247, 0.25); /* mauve (soft) */
+}
+
+window#osd progress {
+  min-height: inherit;
+  border-radius: inherit;
+  border: none;
+  background: #cba6f7; /* mauve */
+}
+
