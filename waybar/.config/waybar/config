@@ -6,6 +6,8 @@
     "margin-right": 5,
     "height": 20,
     "spacing": 0,
+    "on-sigusr1": "hide",
+    "on-sigusr2": "show",
     "modules-left": [
         "custom/launcher",
         "hyprland/workspaces",
