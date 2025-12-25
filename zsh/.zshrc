@@ -150,3 +150,4 @@ kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/.config/fast
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+
