@@ -143,3 +143,10 @@ kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/.config/fast
 
 # Greeting
 # figlet Welcome Divy | lolcat
+
+# bun completions
+[ -s "/home/divy/.bun/_bun" ] && source "/home/divy/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
