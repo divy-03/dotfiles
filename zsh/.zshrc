@@ -105,6 +105,10 @@ function ff() {
   kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/.config/fastfetch/cat.gif | fastfetch --logo-width 30 --raw -
 }
 
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey 'x^e' edit-command-line
+
 # ---------------------------
 # Aliases
 # ---------------------------
@@ -151,3 +155,6 @@ kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/.config/fast
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
+
+# Linux Activity Tracker Hook
+source "/home/divy/code/web/Projects/linux-activity-tracker/shell-hooks/zsh-hook.sh"
