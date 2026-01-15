@@ -1,1 +1,73 @@
-[object Object]
+# espanso match file
+
+# For a complete introduction, visit the official docs at: https://espanso.org/docs/
+
+# You can use this file to define the base matches (aka snippets)
+# that will be available in every application when using espanso.
+
+# Matches are substitution rules: when you type the "trigger" string
+# it gets replaced by the "replace" string.
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/espanso/espanso/dev/schemas/match.schema.json
+
+matches:
+  # Simple text replacement
+  - trigger: ":espanso"
+    replace: "Hi there!"
+
+  # NOTE: espanso uses YAML to define matches, so pay attention to the indentation!
+
+  # But matches can also be dynamic:
+
+  # Print the current date
+  - trigger: ":date"
+    replace: "{{mydate}}"
+    vars:
+      - name: mydate
+        type: date
+        params:
+          format: "%m/%d/%Y"
+
+  # Print the output of a shell command
+  - trigger: ":shell"
+    replace: "{{output}}"
+    vars:
+      - name: output
+        type: shell
+        params:
+          cmd: "echo 'Hello from your shell'"
+
+  - trigger: ":lip"
+    replace: "https://www.linkedin.com/in/pathakdivy03"
+  
+  - trigger: ":ghp"
+    replace: "https://github.com/divy-03"
+
+  - trigger: ":cp"
+    replace: "https://codeforces.com/profile/excl"
+
+  - trigger: ":resume"
+    replace: "https://drive.google.com/file/d/10-FkgwSquHrk7VZdjJn9XPh4Oy7r-js2/view?usp=sharing"
+
+  - trigger: ":email"
+    replace: "pathakdivy03@gmail.com"
+
+  - trigger: ":phn"
+    replace: "8770854737"
+
+  - trigger: ":hsh"
+    replace: "https://hashnode.com/@divy03"
+
+  - trigger: ":skl"
+    replace: "TypeScript, Express, Docker, Linux, CI/CD, Express.js, Redis, ReactJs, NextJs, JWT, Python, FastAPI, React-Native, PostgreSQL, MySQL, Prisma, MongoDB, Redux, SASS, Tailwindcss, GraphQL, Nginx, Web3, Prometheus, Loki, Graphana, WebSockets, Socket.io, RabbitMQ, Kafka, Jest, MCP Server"
+
+  - trigger: ":neo"
+    replace: "NEO709862"
+
+  - trigger: ":pf"
+    replace: "https://termfolio-three.vercel.app"
+
+  - trigger: ":lc"
+    replace: "https://leetcode.com/u/pathakdivy03"
+  
+  # And much more! For more information, visit the docs: https://espanso.org/docs/
