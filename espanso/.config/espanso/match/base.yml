@@ -47,7 +47,7 @@ matches:
     replace: "https://codeforces.com/profile/excl"
 
   - trigger: ":resume"
-    replace: "https://drive.google.com/file/d/10-FkgwSquHrk7VZdjJn9XPh4Oy7r-js2/view?usp=sharing"
+    replace: "https://drive.google.com/file/d/1Cjw_iFFRNwkDrT93R2uPNsaou3s6YaEf/view?usp=sharing"
 
   - trigger: ":email"
     replace: "pathakdivy03@gmail.com"
