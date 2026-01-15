@@ -158,3 +158,7 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 
 # Linux Activity Tracker Hook
 source "/home/divy/code/web/Projects/linux-activity-tracker/shell-hooks/zsh-hook.sh"
+
+. "$HOME/.atuin/bin/env"
+
+eval "$(atuin init zsh)"
