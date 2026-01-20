@@ -69,5 +69,8 @@ matches:
 
   - trigger: ":lc"
     replace: "https://leetcode.com/u/pathakdivy03"
+
+  - trigger: ":oci"
+    replace: "https://drive.google.com/file/d/1rsa8Gb0diRqiO3u2mcpQZmejJW9_nUtB/view?usp=sharing"
   
   # And much more! For more information, visit the docs: https://espanso.org/docs/
