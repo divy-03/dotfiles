@@ -59,7 +59,7 @@ matches:
     replace: "https://hashnode.com/@divy03"
 
   - trigger: ":skl"
-    replace: "TypeScript, Express, Docker, Linux, CI/CD, Express.js, Redis, ReactJs, NextJs, JWT, Python, FastAPI, React-Native, PostgreSQL, MySQL, Prisma, MongoDB, Redux, SASS, Tailwindcss, GraphQL, Nginx, Web3, Prometheus, Loki, Graphana, WebSockets, Socket.io, RabbitMQ, Kafka, Jest, MCP Server"
+    replace: "TypeScript, Express, Docker, Linux, CI/CD, Express.js, Redis, ReactJs, NextJs, JWT, Python, FastAPI, React-Native, PostgreSQL, MySQL, Prisma, MongoDB, Redux, SASS, Tailwindcss, GraphQL, Nginx, Web3, Prometheus, Loki, Graphana, WebSockets, Socket.io, RabbitMQ, Kafka, Jest, MCP Server, n8n workflow"
 
   - trigger: ":neo"
     replace: "NEO709862"
