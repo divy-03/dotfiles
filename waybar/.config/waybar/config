@@ -117,7 +117,7 @@
         },
         "on-click-right": "pavucontrol",
         "on-click": "pamixer -t",
-        "scroll-step": 1
+        "scroll-step": 5
     },
     "custom/launcher": {
         "format": " ",
