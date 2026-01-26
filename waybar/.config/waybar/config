@@ -43,7 +43,7 @@
         "interval": 1,
         "on-click": "playerctl play-pause",
         "on-click-right": "playerctl next",
-        "on-click-middle": "swaync-client -t -sw",
+        "on-click-middle": "hyprctl dispatch togglespecialworkspace spotify",
         "on-scroll-up": "playerctl volume 0.05+",
         "on-scroll-down": "playerctl volume 0.05-",
         "max-length": 50,
