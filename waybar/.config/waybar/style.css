@@ -1,5 +1,7 @@
 @import url("mocha.css");
 
+/* For Hyprland */
+
 * {
   font-family: Material Design Icons, JetBrainsMono Nerd Font;
   font-size: 10px;
@@ -61,7 +63,13 @@ window#waybar.hidden {
   box-shadow: none;
 }
 
-#workspaces button.active {
+#workspaces button.active,
+#custom-special-spotify,
+#custom-special-gpt,
+#custom-special-obsidian,
+#custom-special-terminal,
+#custom-special-code
+{
   color: @blue;
   animation: button_activate .2s ease-in-out;
 }
@@ -80,8 +88,6 @@ window#waybar.hidden {
   background: inherit;
 }
 
-
-
 #workspaces,
 #custom-ibus,
 #clock,
@@ -94,6 +100,11 @@ window#waybar.hidden {
 #custom-powermenu,
 #custom-swaync,
 #mpris,
+#custom-special-spotify,
+#custom-special-gpt,
+#custom-special-obsidian,
+#custom-special-terminal,
+#custom-special-code,
 #tray {
   background-color: @crust;
   padding: 0em 2em;
@@ -111,6 +122,30 @@ window#waybar.hidden {
   padding-right: 10px;
   border-radius: 0px 8px 8px 0px;
   margin-left: -10px;
+}
+
+#custom-special-spotify,
+#custom-special-gpt,
+#custom-special-obsidian,
+#custom-special-terminal,
+#custom-special-code {
+  margin-right: 0;
+}
+
+#custom-special-code {
+  padding-left: 10px;
+  border-radius: 8px 0 0 8px;
+  color: @green;
+}
+
+#custom-special-spotify {
+  color: @green;
+}
+
+#custom-special-obsidian {
+  padding-right: 15px;
+  border-radius: 0px 8px 8px 0px;
+  color: @mauve;
 }
 
 #custom-launcher {

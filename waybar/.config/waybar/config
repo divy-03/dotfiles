@@ -11,6 +11,11 @@
     "modules-left": [
         "custom/launcher",
         "hyprland/workspaces",
+        "custom/special-code",
+        "custom/special-terminal",
+        "custom/special-spotify",
+        "custom/special-gpt",
+        "custom/special-obsidian",
     ],
     "modules-center": [
         "clock",
@@ -82,6 +87,31 @@
             "4": [],
             "5": []
         }
+    },
+    "custom/special-spotify": {
+        "format": "",
+        "tooltip": "Spotify",
+        "on-click": "hyprctl dispatch togglespecialworkspace spotify"
+    },
+    "custom/special-gpt": {
+        "format": "🤖",
+        "tooltip": "ChatGPT",
+        "on-click": "hyprctl dispatch togglespecialworkspace gpt"
+    },
+    "custom/special-obsidian": {
+        "format": "",
+        "tooltip": "Obsidian",
+        "on-click": "hyprctl dispatch togglespecialworkspace obsidian"
+    },
+    "custom/special-terminal": {
+        "format": "",
+        "tooltip": "Terminal",
+        "on-click": "hyprctl dispatch togglespecialworkspace terminal"
+    },
+    "custom/special-code": {
+        "format": "",
+        "tooltip": "Code",
+        "on-click": "hyprctl dispatch togglespecialworkspace code"
     },
     "memory": {
         "interval": 5,
