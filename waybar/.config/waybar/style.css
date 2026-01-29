@@ -140,10 +140,12 @@ window#waybar.hidden {
 
 #custom-special-spotify {
   color: @green;
+  padding-right: 5px;
 }
 
 #custom-special-obsidian {
   padding-right: 15px;
+  padding-left: 0px;
   border-radius: 0px 8px 8px 0px;
   color: @mauve;
 }
