@@ -78,17 +78,25 @@ SAVEHIST=1000
 bindkey -v   # vi-style keybindings (normal/insert mode)
 
 # ---------------------------
-# Completion
+# Completion (cached for speed)
 # ---------------------------
 autoload -Uz compinit
-compinit
+if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then
+  compinit
+else
+  compinit -C
+fi
 zstyle :compinstall filename "$HOME/.zshrc"
 
 # ---------------------------
-# Prompt (Oh My Posh)
+# Prompt (Oh My Posh - cached for speed)
 # ---------------------------
-# Change config file/theme if you like
-eval "$(oh-my-posh init zsh --config ~/.cache/oh-my-posh/themes/paradox.omp.json)"
+_omp_cache="$HOME/.cache/oh-my-posh-init.zsh"
+_omp_theme="$HOME/.cache/oh-my-posh/themes/paradox.omp.json"
+if [[ ! -f "$_omp_cache" || "$_omp_theme" -nt "$_omp_cache" ]]; then
+  oh-my-posh init zsh --config "$_omp_theme" > "$_omp_cache"
+fi
+source "$_omp_cache"
 
 eval "$(zoxide init zsh)"
 
@@ -139,10 +147,10 @@ export PATH="$HOME/.cargo/bin:$PATH"
 
 export PATH=$PATH:/home/divy/.spicetify
 
-# Clear screen first (optional)
+# ---------------------------
+# Fastfetch greeting
+# ---------------------------
 clear
-
-# Show kitty image (icat) and run fastfetch
 kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/.config/fastfetch/cat.gif | fastfetch --logo-width 30 --raw -
 
 # Greeting
@@ -162,3 +170,11 @@ source "/home/divy/code/web/Projects/linux-activity-tracker/shell-hooks/zsh-hook
 . "$HOME/.atuin/bin/env"
 
 eval "$(atuin init zsh)"
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+# OpenClaw Completion (cached for speed)
+_openclaw_comp_cache="$HOME/.cache/openclaw-completion.zsh"
+if [[ ! -f "$_openclaw_comp_cache" || $(command -v openclaw) -nt "$_openclaw_comp_cache" ]]; then
+  openclaw completion --shell zsh > "$_openclaw_comp_cache" 2>/dev/null
+fi
+[[ -f "$_openclaw_comp_cache" ]] && source "$_openclaw_comp_cache"
