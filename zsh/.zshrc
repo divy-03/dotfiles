@@ -178,3 +178,5 @@ if [[ ! -f "$_openclaw_comp_cache" || $(command -v openclaw) -nt "$_openclaw_com
   openclaw completion --shell zsh > "$_openclaw_comp_cache" 2>/dev/null
 fi
 [[ -f "$_openclaw_comp_cache" ]] && source "$_openclaw_comp_cache"
+
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
