@@ -65,7 +65,7 @@ matches:
     replace: "NEO709862"
 
   - trigger: ":pf"
-    replace: "https://termfolio-three.vercel.app"
+    replace: "https://divydev.xyz"
 
   - trigger: ":lc"
     replace: "https://leetcode.com/u/pathakdivy03"
