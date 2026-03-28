@@ -108,9 +108,9 @@ function y() {
 	rm -f -- "$tmp"
 }
 
-function ff() {
-  clear
-  kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/.config/fastfetch/cat.gif | fastfetch --logo-width 30 --raw -
+ff() {
+    clear
+    kitten icat -n --place 30x30@0x6 --scale-up --align left "$HOME/.config/fastfetch/cat.gif" | fastfetch --logo-width 30 --raw -
 }
 
 autoload -Uz edit-command-line
@@ -150,8 +150,7 @@ export PATH=$PATH:/home/divy/.spicetify
 # ---------------------------
 # Fastfetch greeting
 # ---------------------------
-clear
-kitten icat -n --place 30x30@0x6 --scale-up --align left /home/divy/.config/fastfetch/cat.gif | fastfetch --logo-width 30 --raw -
+ff
 
 # Greeting
 # figlet Welcome Divy | lolcat
