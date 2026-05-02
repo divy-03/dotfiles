@@ -37,6 +37,7 @@
             "spotify": " ",
             "firefox": "󰈹",
             "chrome": "",
+            "brave": " "
         },
         "status-icons": {
             "playing": "▶",
