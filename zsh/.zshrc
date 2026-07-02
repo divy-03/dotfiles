@@ -179,3 +179,7 @@ fi
 [[ -f "$_openclaw_comp_cache" ]] && source "$_openclaw_comp_cache"
 
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
+
+
+# Added by Antigravity CLI installer
+export PATH="/home/divy/.local/bin:$PATH"
