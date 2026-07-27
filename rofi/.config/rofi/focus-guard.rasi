@@ -68,7 +68,7 @@ listview {
     lines:                       4;
     cycle:                       true;
     dynamic:                     true;
-    scrollbar:                   true;
+    scrollbar:                   false;
     layout:                      vertical;
     reverse:                     false;
     fixed-height:                false;
@@ -76,7 +76,7 @@ listview {
 
     spacing:                     8px;
     margin:                      0px;
-    padding:                     10px 5px 10px 10px;
+    padding:                     10px 10px 10px 10px;
     border:                      0px solid;
     border-radius:               0px;
     border-color:                @selected;

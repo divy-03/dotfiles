@@ -29,7 +29,7 @@ else
   header="Why are you opening this?"
 fi
 
-mesg="$header\nToday: $count   Yesterday: $yesterday_count"
+mesg="$header"$'\n'"Today: $count   Yesterday: $yesterday_count"
 
 selection=$(printf '1. Work / Development\n2. Banking / Personal\n3. Testing a website\n4. I'\''m procrastinating\n' |
   timeout "${timeout_s}s" rofi -dmenu -p "focus-guard" -mesg "$mesg" -theme "$THEME")
@@ -45,7 +45,7 @@ case "$selection" in
 4.*)
   confirm=$(printf 'Yes, close it\nNo, continue anyway\n' |
     timeout "${timeout_s}s" rofi -dmenu -p "focus-guard" \
-      -mesg "You told yourself it's procrastination.\nClose the window?" -theme "$THEME")
+      -mesg "You told yourself it's procrastination."$'\n'"Close the window?" -theme "$THEME")
   if [[ "$confirm" == "Yes"* ]]; then
     echo "$(date '+%F %T')  closed-procrastination-confirmed" >>"$LOG_FILE"
     close_window
