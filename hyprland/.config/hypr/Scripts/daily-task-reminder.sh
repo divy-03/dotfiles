@@ -24,6 +24,7 @@ while true; do
 
         if ((now_epoch >= sched_epoch)); then
           notify-send -u critical -a "Daily Tasks" "Task overdue: $task" "Was due at $time_str"
+          sleep 1.5
         fi
       fi
     done <"$file"

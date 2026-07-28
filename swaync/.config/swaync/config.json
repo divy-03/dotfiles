@@ -5,30 +5,26 @@
   "cssPriority": "user",
   "layer": "overlay",
   "layer-shell": true,
-
   "control-center-layer": "top",
   "control-center-width": 380,
-  "control-center-height": 750,
+  "control-center-height": 950,
   "control-center-margin-top": 10,
   "control-center-margin-bottom": 10,
   "control-center-margin-right": 10,
   "control-center-margin-left": 0,
-
   "notification-window-width": 350,
-  "notification-window-height": 200,
+  "notification-window-height": 280,
   "notification-icon-size": 70,
   "notification-body-image-height": 200,
   "notification-body-image-width": 200,
   "notification-2fa-action": true,
   "notifications-inline-replies": true,
-  "notification-stack-limit": 2,
+  "notification-stack-limit": 5,
   "stack-duplicates": true,
   "stack-btn": true,
-
   "timeout": 3,
   "timeout-low": 2,
-  "timeout-critical": 2,
-
+  "timeout-critical": 10,
   "fit-to-screen": false,
   "relative-timestamps": true,
   "keyboard-shortcuts": true,
@@ -38,29 +34,24 @@
   "hide-on-action": true,
   "script-fail-notify": true,
   "widgets": [
-    "buttons-grid",
     "mpris",
     "dnd",
     "title",
     "notifications"
   ],
-
   "widget-config": {
     "title": {
       "text": "NOTIFICATIONS",
       "clear-all-button": true,
       "button-text": "󰩺  CLEAR"
     },
-
     "dnd": {
       "text": "FUCK OFF "
     },
-
     "mpris": {
       "image-size": 76,
       "image-radius": 10
     },
-
     "buttons-grid": {
       "actions": [
         {

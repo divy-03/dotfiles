@@ -346,7 +346,7 @@ trough {
 
 .notification.critical {
   border: 2px solid @red;
-  background: alpha(@red, 0.15);
+  background: alpha(@mantle, 0.95);
 }
 
 /* Inline replies */
