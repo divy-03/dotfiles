@@ -236,6 +236,55 @@
   border-color: @blue;
 }
 
+/* Task Reminders Settings Row */
+#reminder {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+#reminder > flowbox {
+  padding: 0;
+}
+#reminder > flowbox > flowboxchild {
+  padding: 0;
+}
+#reminder button.toggle {
+  background-color: alpha(@surface0, 0.8);
+  /* Use an SVG data URI to draw an off-switch that looks like the DND widget switch */
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iMjYiIHZpZXdCb3g9IjAgMCA1MCAyNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iNTAiIGhlaWdodD0iMjYiIHJ4PSIxMyIgZmlsbD0iIzQ1NDc1YSIvPjxjaXJjbGUgY3g9IjEzIiBjeT0iMTMiIHI9IjEwIiBmaWxsPSIjY2RkNmY0Ii8+PC9zdmc+');
+  background-size: 50px 26px;
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  
+  border-radius: 8px;
+  padding: 12px;
+  /* Use large right padding to push text to the left */
+  padding-right: 180px; 
+  margin: 8px;
+  font-weight: bold;
+  font-size: 14px;
+  color: @text;
+  border: none;
+  box-shadow: none;
+  text-shadow: none;
+  min-height: 0;
+}
+
+#reminder button.toggle:hover {
+  background-color: alpha(@surface0, 1.0);
+}
+
+#reminder button.toggle:checked {
+  background-color: alpha(@surface0, 0.8);
+  /* Use an SVG data URI to draw an on-switch */
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iMjYiIHZpZXdCb3g9IjAgMCA1MCAyNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iNTAiIGhlaWdodD0iMjYiIHJ4PSIxMyIgZmlsbD0iI2NiYTZmNyIvPjxjaXJjbGUgY3g9IjM3IiBjeT0iMTMiIHI9IjEwIiBmaWxsPSIjMWUxZTJlIi8+PC9zdmc+');
+  color: @text;
+}
+
+#reminder button.toggle:checked:hover {
+  background-color: alpha(@surface0, 1.0);
+}
+
 /* MPRIS Widget */
 .widget-mpris {
   background: alpha(@surface0, 0.8);

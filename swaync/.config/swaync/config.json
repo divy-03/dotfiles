@@ -36,6 +36,7 @@
   "widgets": [
     "mpris",
     "dnd",
+    "buttons-grid#reminder",
     "title",
     "notifications"
   ],
@@ -51,6 +52,18 @@
     "mpris": {
       "image-size": 76,
       "image-radius": 10
+    },
+    "buttons-grid#reminder": {
+      "buttons-per-row": 1,
+      "actions": [
+        {
+          "label": "⏰ TASK REMINDERS",
+          "type": "toggle",
+          "active": true,
+          "command": "/home/divy/.config/hypr/Scripts/daily-task-reminder-toggle.sh apply",
+          "update-command": "/home/divy/.config/hypr/Scripts/daily-task-reminder-toggle.sh status"
+        }
+      ]
     },
     "buttons-grid": {
       "actions": [
