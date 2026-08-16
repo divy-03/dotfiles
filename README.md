@@ -1,4 +1,4 @@
-# 🌙 My Dotfiles
+# 🌙 My Dotfiles [![wakatime](https://wakatime.com/badge/github/divy-03/dotfiles.svg)](https://wakatime.com/badge/github/divy-03/dotfiles)
 
 Welcome to my **dotfiles repo** — aka the soul of my Linux setup 💻✨
 This is where all the magic happens: Hyprland configs, Waybar themes, Rofi menus, and other tweaks that make my system *feel like home*.
