@@ -21,8 +21,7 @@
         "clock",
     ],
     "modules-right": [
-        "custom/cava",
-        "mpris",
+        "group/player",
         "tray",
         "memory",
         "pulseaudio",
@@ -114,6 +113,14 @@
         "format": "",
         "tooltip": "Code",
         "on-click": "hyprctl dispatch togglespecialworkspace code"
+    },
+    // Wrapper so the pill can live on the container instead of either module.
+    "group/player": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/cava",
+            "mpris"
+        ]
     },
     "custom/cava": {
         "format": "{}",
