@@ -24,7 +24,6 @@
         "custom/cava",
         "mpris",
         "tray",
-        "custom/netspeed",
         "memory",
         "pulseaudio",
         "custom/swaync",
@@ -47,14 +46,14 @@
         },
         "dynamic-order": ["title", "artist"],
         "dynamic-separator": " - ",
-        "dynamic-len": 40,
+        "dynamic-len": 32,
         "interval": 1,
         "on-click": "playerctl play-pause",
         "on-click-right": "playerctl next",
         "on-click-middle": "hyprctl dispatch togglespecialworkspace spotify",
         "on-scroll-up": "playerctl volume 0.05+",
         "on-scroll-down": "playerctl volume 0.05-",
-        "max-length": 50,
+        "max-length": 36,
         "tooltip": true,
         "tooltip-format": "{player}\n{title}\n{artist}\n{album}"
     },
@@ -118,10 +117,18 @@
     },
     "custom/cava": {
         "format": "{}",
+        "return-type": "json",
         "exec": "$HOME/.config/hypr/Scripts/cava-waybar.sh",
         "restart-interval": 5,
-        "tooltip": false,
-        "on-click": "hyprctl dispatch togglespecialworkspace spotify"
+        "tooltip": true,
+        "escape": true,
+        // Painted over mpris, so it receives the pointer events meant for it.
+        // Keep these in sync with the mpris bindings below.
+        "on-click": "playerctl play-pause",
+        "on-click-right": "playerctl next",
+        "on-click-middle": "hyprctl dispatch togglespecialworkspace spotify",
+        "on-scroll-up": "playerctl volume 0.05+",
+        "on-scroll-down": "playerctl volume 0.05-"
     },
     "custom/netspeed": {
         "format": "{}",

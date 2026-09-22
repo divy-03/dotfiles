@@ -186,6 +186,9 @@ window#waybar.hidden {
   padding-right: 12px;
   font-size: 13px;
   border-radius: 8px 8px 8px 8px;
+  /* Pulled back under custom/cava, which is painted over it. */
+  min-width: 306px;
+  margin-left: -330px;
 }
 
 #mpris.playing {
@@ -201,12 +204,22 @@ window#waybar.hidden {
   color: @overlay0;
 }
 
+/* Visualizer layered with #mpris.
+   modules-right paints in reverse, so the module listed FIRST lands on top:
+   custom/cava is listed before mpris and therefore draws over it. That means
+   cava must stay transparent and mpris keeps the pill underneath. Both are
+   pinned to 330px (306px content + 2x12px padding) so mpris's negative margin
+   lands the two exactly on top of each other and the width never changes
+   per frame -- a varying width would relayout the whole bar 20x a second. */
 #custom-cava {
-  color: @mauve;
+  background-color: transparent;
+  color: alpha(@mauve, 0.5);
   font-family: JetBrainsMono Nerd Font;
   font-size: 14px;
-  padding-left: 10px;
-  padding-right: 10px;
+  min-width: 306px;
+  padding-left: 12px;
+  padding-right: 12px;
+  margin-right: 0;
   border-radius: 8px 8px 8px 8px;
 }
 

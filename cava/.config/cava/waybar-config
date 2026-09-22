@@ -3,8 +3,8 @@
 # profile in ./config is left alone.
 
 [general]
-framerate = 30
-bars = 12
+framerate = 20
+bars = 34
 autosens = 1
 
 [input]
