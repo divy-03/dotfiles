@@ -1,0 +1,25 @@
+# Separate cava profile for the waybar visualizer module.
+# Emits one ascii frame per line on stdout; the interactive ncurses
+# profile in ./config is left alone.
+
+[general]
+framerate = 30
+bars = 12
+autosens = 1
+
+[input]
+method = pulse
+source = auto
+
+[output]
+method = raw
+raw_target = /dev/stdout
+data_format = ascii
+ascii_max_range = 7
+channels = mono
+mono_option = average
+
+[smoothing]
+noise_reduction = 45
+monstercat = 1
+waves = 0

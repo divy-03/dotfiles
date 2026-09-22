@@ -110,6 +110,7 @@ window#waybar.hidden {
 #custom-powermenu,
 #custom-swaync,
 #custom-netspeed,
+#custom-cava,
 #mpris,
 #custom-special-spotify,
 #custom-special-gpt,
@@ -198,6 +199,15 @@ window#waybar.hidden {
 
 #mpris.stopped {
   color: @overlay0;
+}
+
+#custom-cava {
+  color: @mauve;
+  font-family: JetBrainsMono Nerd Font;
+  font-size: 14px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 8px 8px 8px 8px;
 }
 
 #pulseaudio {

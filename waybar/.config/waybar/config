@@ -21,6 +21,7 @@
         "clock",
     ],
     "modules-right": [
+        "custom/cava",
         "mpris",
         "tray",
         "custom/netspeed",
@@ -114,6 +115,13 @@
         "format": "",
         "tooltip": "Code",
         "on-click": "hyprctl dispatch togglespecialworkspace code"
+    },
+    "custom/cava": {
+        "format": "{}",
+        "exec": "$HOME/.config/hypr/Scripts/cava-waybar.sh",
+        "restart-interval": 5,
+        "tooltip": false,
+        "on-click": "hyprctl dispatch togglespecialworkspace spotify"
     },
     "custom/netspeed": {
         "format": "{}",
