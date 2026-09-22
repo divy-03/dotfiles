@@ -49,7 +49,7 @@ selected_name=$(printf '%b\n' "${entries[@]}" | rofi -dmenu -i -p "🖼 " \
 # Get the full path that matches the chosen filename
 selected_wallpaper=$(printf '%s\n' "${images[@]}" | grep "/$selected_name$")
 
-# Apply wallpaper with swww
+# Apply wallpaper with awww
 if [[ "$selected_wallpaper" == *.gif ]]; then
   awww img "$selected_wallpaper" --transition-type none
 else
