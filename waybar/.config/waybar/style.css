@@ -39,6 +39,16 @@ window#waybar.hidden {
   border-radius: 8px 8px 8px 8px;
 }
 
+#custom-netspeed {
+  color: @sky;
+  font-family: JetBrainsMono Nerd Font;
+  border-radius: 8px 8px 8px 8px;
+}
+
+#custom-netspeed.disconnected {
+  color: @overlay0;
+}
+
 #memory,
 #cpu {
   font-size: 16px;
@@ -99,6 +109,7 @@ window#waybar.hidden {
 #custom-launcher,
 #custom-powermenu,
 #custom-swaync,
+#custom-netspeed,
 #mpris,
 #custom-special-spotify,
 #custom-special-gpt,

@@ -23,6 +23,7 @@
     "modules-right": [
         "mpris",
         "tray",
+        "custom/netspeed",
         "memory",
         "pulseaudio",
         "custom/swaync",
@@ -113,6 +114,14 @@
         "format": "",
         "tooltip": "Code",
         "on-click": "hyprctl dispatch togglespecialworkspace code"
+    },
+    "custom/netspeed": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "$HOME/.config/hypr/Scripts/network-speed.sh",
+        "restart-interval": 5,
+        "tooltip": true,
+        "on-click": "nm-connection-editor"
     },
     "memory": {
         "interval": 5,
