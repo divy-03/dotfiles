@@ -51,9 +51,9 @@ selected_wallpaper=$(printf '%s\n' "${images[@]}" | grep "/$selected_name$")
 
 # Apply wallpaper with swww
 if [[ "$selected_wallpaper" == *.gif ]]; then
-  swww img "$selected_wallpaper" --transition-type none
+  awww img "$selected_wallpaper" --transition-type none
 else
-  swww img "$selected_wallpaper" --transition-type any --transition-fps 60 --transition-duration 1.5
+  awww img "$selected_wallpaper" --transition-type any --transition-fps 60 --transition-duration 1.5
 fi
 
 # Optional: Save current wallpaper to a file for persistence
