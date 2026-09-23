@@ -1,0 +1,25 @@
+# Deliberately minimal. `prepend_rules` layers on top of yazi's built-in rules
+# rather than replacing them, so every other filetype keeps its default handling
+# and new yazi releases can still ship new defaults -- pasting the whole preset
+# list in here would freeze this config at whatever yazi 26.5 happened to ship.
+#
+# (No "$schema" line: yazi 26 validates key names and rejects it outright with
+# `must be a kebab-cased string`, falling back to preset settings.)
+#
+# Why this file exists at all: yazi's built-in rule for images is
+#   { mime = "image/*", use = [ "open", "reveal" ] }
+# where "open" is `xdg-open`, and xdg-open resolves image/* to brave-browser
+# on this machine. So Enter/l on an image handed it to the browser, not a viewer.
+
+[opener]
+swayimg = [
+	{ run = 'swayimg -- "$@"', orphan = true, desc = "Open in swayimg", for = "unix" },
+]
+
+[open]
+prepend_rules = [
+	# "$@" rather than "$1" so selecting several images and hitting Enter opens
+	# them as one list, walkable with n/p inside swayimg. xdg-open is kept on the
+	# list behind it, so `O` (open-with) still offers the browser.
+	{ mime = "image/*", use = [ "swayimg", "open", "reveal" ] },
+]

@@ -1,0 +1,7 @@
+# Only the one rebind; prepend_keymap layers over yazi's preset keymap instead of
+# replacing it, so every other key keeps working and new releases can add more.
+
+[mgr]
+prepend_keymap = [
+	{ on = "l", run = "plugin smart-enter", desc = "Enter the directory, or open the file" },
+]
