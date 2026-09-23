@@ -8,8 +8,10 @@
 # supplies the matching tooltip.
 #
 # The module is gated on a media player existing so it appears and disappears in
-# step with mpris, and it collapses after a stretch of silence so a paused player
-# does not park a flat baseline in the bar.
+# step with mpris. It deliberately does NOT blank itself on silence: mpris is
+# overlaid on it with a negative margin, so a zero-width visualizer drags mpris
+# out of the group and the whole player vanishes. A paused player therefore
+# keeps a flat baseline here, which is what leaves something to click to resume.
 
 CONFIG="$HOME/.config/cava/waybar-config"
 
@@ -40,8 +42,6 @@ function esc(s,   out, i, c) {
 BEGIN {
     blk[0] = "▁"; blk[1] = "▂"; blk[2] = "▃"; blk[3] = "▄"
     blk[4] = "▅"; blk[5] = "▆"; blk[6] = "▇"; blk[7] = "█"
-    hold = 30          # frames of silence before collapsing (~1.5s at 20fps)
-    quiet = 0
     player = 0
     shown = -1
     tip = ""
@@ -59,23 +59,20 @@ BEGIN {
 }
 
 {
+    if (!player) {
+        # Only ever collapse when there is no player at all, so this stays in
+        # lockstep with mpris hiding itself and the group empties as a whole.
+        if (shown != 0) { print "{\"text\":\"\"}"; fflush(); shown = 0 }
+        next
+    }
+
     n = split($0, f, ";")
     line = ""
-    active = 0
     for (i = 1; i < n; i++) {
         v = f[i] + 0
         if (v < 0) v = 0
         if (v > 7) v = 7
-        if (v > 0) active = 1
         line = line blk[v]
-    }
-
-    if (active) quiet = 0; else quiet++
-
-    if (!player || quiet > hold) {
-        # Empty text collapses the module, matching mpris hiding itself.
-        if (shown != 0) { print "{\"text\":\"\"}"; fflush(); shown = 0 }
-        next
     }
 
     printf "{\"text\":\"%s\",\"tooltip\":\"%s\"}\n", line, tip
