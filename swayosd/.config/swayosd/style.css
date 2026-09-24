@@ -1,7 +1,18 @@
+/* The GTK4 theme (catppuccin) styles .osd / .title-* / .heading with extra
+   padding, margin, shadow and big bold text -- pin everything back down here
+   so the OSD stays compact whatever the system GTK theme is. */
 window#osd {
   border-radius: 10px;
   border: 2px solid #45475a; /* surface1 */
   background: rgba(30, 30, 46, 0.88); /* base */
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+}
+
+window#osd label {
+  font-size: 11pt;
+  font-weight: normal;
 }
 
 window#osd #container {
