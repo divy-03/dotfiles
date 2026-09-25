@@ -1,4 +1,4 @@
-@import url("mocha.css");
+@import url("colors.css");
 
 /* For Niri */
 
@@ -70,7 +70,7 @@ window#waybar.hidden {
 
 #workspaces button.urgent {
   color: @peach;
-  background: radial-gradient(circle, rgba(25, 79, 255, 0.3) 20%, rgba(132, 129, 156, 0) 30%);
+  background: radial-gradient(circle, alpha(@peach, 0.3) 20%, alpha(@overlay1, 0) 30%);
 }
 
 #workspaces button.persistent {
@@ -120,7 +120,7 @@ window#waybar.hidden {
   margin-left: 5px;
   font-size: 15px;
   border-radius: 8px 8px 8px 8px;
-  color: #1793d1;
+  color: @blue;
 }
 
 #mpris {
@@ -209,8 +209,8 @@ window#waybar.hidden {
 
 @keyframes blink {
   to {
-    background-color: rgba(30, 34, 42, 0.5);
-    color: #abb2bf;
+    background-color: alpha(@base, 0.5);
+    color: @subtext0;
   }
 }
 
@@ -268,7 +268,7 @@ label:focus {
 
 #tray>.needs-attention {
   -gtk-icon-effect: highlight;
-  background-color: #eb4d4b;
+  background-color: @red;
 }
 
 #idle_inhibitor {

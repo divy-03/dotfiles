@@ -1,10 +1,12 @@
+@import url("colors.css"); /* generated from the wallpaper by matugen */
+
 /* The GTK4 theme (catppuccin) styles .osd / .title-* / .heading with extra
    padding, margin, shadow and big bold text -- pin everything back down here
    so the OSD stays compact whatever the system GTK theme is. */
 window#osd {
   border-radius: 10px;
-  border: 2px solid #45475a; /* surface1 */
-  background: rgba(30, 30, 46, 0.88); /* base */
+  border: 2px solid @surface1;
+  background: alpha(@base, 0.88);
   padding: 0;
   margin: 0;
   box-shadow: none;
@@ -27,7 +29,7 @@ window#osd image {
 
 window#osd image,
 window#osd label {
-  color: #cba6f7; /* mauve */
+  color: @mauve;
 }
 
 window#osd progressbar:disabled,
@@ -46,13 +48,13 @@ window#osd trough {
   min-height: inherit;
   border-radius: inherit;
   border: none;
-  background: rgba(203, 166, 247, 0.25); /* mauve (soft) */
+  background: alpha(@mauve, 0.25);
 }
 
 window#osd progress {
   min-height: inherit;
   border-radius: inherit;
   border: none;
-  background: #cba6f7; /* mauve */
+  background: @mauve;
 }
 

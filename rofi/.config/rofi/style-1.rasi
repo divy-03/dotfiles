@@ -1,4 +1,4 @@
-@import "shared/mocha.rasi"
+@import "shared/colors.rasi"
 @import "shared/fonts.rasi"
 
 * {
@@ -26,7 +26,7 @@ window {
     border:                      2px solid;
     border-radius:               16px;
     border-color:                @border-col;
-    background-color:            rgba(30, 30, 46, 0.95);
+    background-color:            @base-alpha;
     cursor:                      "default";
 }
 

@@ -142,6 +142,8 @@ source ~/.zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 # ---------------------------
 [ -f /usr/share/fzf/shell/key-bindings.zsh ] && source /usr/share/fzf/shell/key-bindings.zsh
 [ -f /usr/share/fzf/shell/completion.zsh ] && source /usr/share/fzf/shell/completion.zsh
+# colors generated from the wallpaper by matugen (see ~/.config/matugen)
+[ -f ~/.config/fzf/colors ] && export FZF_DEFAULT_OPTS_FILE=~/.config/fzf/colors
 
 export PATH="$HOME/.cargo/bin:$PATH"
 
