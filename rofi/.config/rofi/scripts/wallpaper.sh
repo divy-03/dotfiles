@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-WALLPAPER_DIR="$HOME/Pictures/wallpapers/walls-catppuccin-mocha"
+# WALLPAPER_DIR="$HOME/Pictures/wallpapers/walls-catppuccin-mocha"
+WALLPAPER_DIR="$HOME/Pictures/wallpapers"
 CACHE_DIR="$HOME/.cache/rofi/wallpaper-thumbs"
 
 # Create cache directory if it doesn't exist
