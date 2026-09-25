@@ -53,7 +53,7 @@ That’s it. Stow handles all the symlinks for you.
 ## Notes
 
 * You’ll need **awww** (`awww-daemon`) running before applying wallpapers.
-* **Colors follow the wallpaper.** Picking a wallpaper (Super+G) runs `~/.config/hypr/Scripts/set-wallpaper.sh`, which sets it with awww and runs [**matugen**](https://github.com/InioX/matugen) (`cargo install matugen`) to regenerate the palette for Hyprland, hyprlock, Waybar, SwayNC, SwayOSD, rofi, wlogout, kitty, alacritty, mako, cava, yazi, tmux, fzf, btop, GTK and Neovim. Templates live in `matugen/.config/matugen/templates` and keep the Catppuccin color names; the generated files are git-ignored, so run `set-wallpaper.sh <image>` once after a fresh stow.
+* **Themes.** Super+Shift+G opens a theme picker: a preset (Catppuccin Mocha/Macchiato, Tokyo Night/Moon, Gruvbox, Nord, Rosé Pine, Kanagawa, Everforest, Dracula, One Dark) or **Wallpaper (auto)**, which derives the colors from the wallpaper with [**matugen**](https://github.com/InioX/matugen) (`cargo install matugen`) every time you pick one with Super+G. `~/.config/theme/theme` (package `theme`) renders the templates in `theme/.config/theme/templates` for Hyprland, hyprlock, Waybar, SwayNC, SwayOSD, rofi, wlogout, kitty, alacritty, mako, cava, yazi, tmux, fzf, btop, GTK and Neovim (a real colorscheme per preset), and also themes Zen: translucent with Hyprland blur, terminal font, applied on Zen restart. Add a theme by dropping a `.toml` into `theme/.config/theme/themes`. The generated files are git-ignored, so run `~/.config/theme/theme set <theme>` once after a fresh stow.
 * My setup is on **Fedora + Hyprland**, but you can adapt it to any Wayland-based system.
 * Fonts and icons: I use **JetBrainsMono Nerd Font** and **Papirus Icons**.
 

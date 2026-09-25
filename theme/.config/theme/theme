@@ -1,0 +1,326 @@
+#!/usr/bin/env python3
+"""Apply one color theme to the whole desktop.
+
+A theme is a palette with the Catppuccin color names (base, surface0, text,
+red, ...) plus an accent. It comes either from a preset in themes/*.toml or
+from the current wallpaper (matugen writes ~/.cache/theme/wallpaper.toml).
+Every template in templates/ is rendered with it (see outputs.toml), then the
+apps are told to reload. Zen gets the palette through userChrome/userContent.
+
+usage:
+  theme list                  presets as "id<TAB>name" (plus "wallpaper")
+  theme current               the active theme id
+  theme set <id>              switch to a preset, or "wallpaper"
+  theme refresh               regenerate the wallpaper theme if it is active
+                              (run after the wallpaper changes)
+  theme preview <id>          print the path of a swatch image (for rofi)
+
+Template syntax: {{key}} or {{key | filter | ...}} with the filters
+strip (hex without "#"), alpha: 0.9 (rgba(...)), rgb ("r, g, b") and
+lighten: N (HSL lightness +N%, negative darkens).
+"""
+
+import colorsys
+import glob
+import os
+import re
+import subprocess
+import sys
+import tomllib
+
+HOME = os.path.expanduser("~")
+CONF = os.path.join(HOME, ".config/theme")
+CACHE = os.path.join(HOME, ".cache/theme")
+STATE = os.path.join(CACHE, "current")
+WALLPAPER_PALETTE = os.path.join(CACHE, "wallpaper.toml")
+CURRENT_WALLPAPER = os.path.join(HOME, ".cache/current_wallpaper")
+DEFAULT_THEME = "wallpaper"
+
+COLORS = [
+    "rosewater", "flamingo", "pink", "mauve", "red", "maroon", "peach", "yellow",
+    "green", "teal", "sky", "sapphire", "blue", "lavender", "text", "subtext1",
+    "subtext0", "overlay2", "overlay1", "overlay0", "surface2", "surface1",
+    "surface0", "base", "mantle", "crust", "accent",
+]
+
+# Zen: every profile gets chrome/theme-colors.css (+ theme-content.css)
+ZEN_PROFILES = [os.path.join(HOME, ".zen/*/prefs.js")]
+
+
+# ---------------------------------------------------------------- colors
+
+def rgb(hex_):
+    h = hex_.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def to_hex(r, g, b):
+    return "#%02x%02x%02x" % tuple(max(0, min(255, round(c))) for c in (r, g, b))
+
+
+def lighten(hex_, amount):
+    h, l, s = colorsys.rgb_to_hls(*(c / 255 for c in rgb(hex_)))
+    l = max(0.0, min(1.0, l + amount / 100))
+    return to_hex(*(c * 255 for c in colorsys.hls_to_rgb(h, l, s)))
+
+
+def is_hex(v):
+    return isinstance(v, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", v) is not None
+
+
+# ---------------------------------------------------------------- themes
+
+def preset_path(theme_id):
+    return os.path.join(CONF, "themes", theme_id + ".toml")
+
+
+def presets():
+    out = []
+    for path in sorted(glob.glob(os.path.join(CONF, "themes", "*.toml"))):
+        theme_id = os.path.basename(path)[:-5]
+        with open(path, "rb") as f:
+            out.append((theme_id, tomllib.load(f).get("name", theme_id)))
+    return out
+
+
+def current():
+    try:
+        with open(STATE) as f:
+            return f.read().strip() or DEFAULT_THEME
+    except OSError:
+        return DEFAULT_THEME
+
+
+def wallpaper_theme():
+    """Run matugen on the current wallpaper and load the palette it writes."""
+    try:
+        with open(CURRENT_WALLPAPER) as f:
+            wall = f.read().strip()
+    except OSError:
+        wall = ""
+    if not os.path.isfile(wall):
+        sys.exit(f"theme: no current wallpaper ({CURRENT_WALLPAPER}); set one with Super+G")
+
+    src = wall
+    if wall.lower().endswith(".gif"):
+        # matugen can't read animated gifs reliably; use the first frame
+        src = os.path.join(CACHE, "wallpaper-frame.png")
+        subprocess.run(["magick", wall + "[0]", src], check=True)
+
+    env = dict(os.environ)
+    # matugen is a cargo install; Hyprland's exec PATH doesn't include ~/.cargo/bin
+    env["PATH"] = os.path.join(HOME, ".cargo/bin") + os.pathsep + env.get("PATH", "")
+    subprocess.run(["matugen", "image", src, "-m", "dark", "-q"], check=True, env=env)
+    with open(WALLPAPER_PALETTE, "rb") as f:
+        return tomllib.load(f)
+
+
+def load(theme_id):
+    if theme_id == "wallpaper":
+        return wallpaper_theme()
+    path = preset_path(theme_id)
+    if not os.path.isfile(path):
+        sys.exit(f"theme: unknown theme '{theme_id}' (see `theme list`)")
+    with open(path, "rb") as f:
+        return tomllib.load(f)
+
+
+def palette(theme_id, theme):
+    """Flatten a theme file into the variables the templates can use."""
+    c = dict(theme.get("colors", {}))
+    missing = [k for k in COLORS if k not in c]
+    if missing:
+        sys.exit(f"theme: '{theme_id}' is missing colors: {', '.join(missing)}")
+    c.setdefault("on_accent", c["crust"])
+    c.setdefault("accent_container", c["accent"])
+    c.setdefault("secondary", c["lavender"])
+
+    # terminal: exact ANSI colors when the theme has them, else derived
+    t = theme.get("terminal", {})
+    base16 = ["surface1", "red", "green", "yellow", "blue", "pink", "teal", "subtext1"]
+    for i, name in enumerate(base16):
+        c[f"color{i}"] = t.get(f"color{i}", c[name])
+        bright = c["surface2"] if i == 0 else c["text"] if i == 7 else lighten(c[name], 5)
+        c[f"color{i + 8}"] = t.get(f"color{i + 8}", bright)
+    c["term_bg"] = t.get("background", c["base"])
+    c["term_fg"] = t.get("foreground", c["text"])
+    c["term_cursor"] = t.get("cursor", c["accent"])
+    c["term_cursor_text"] = t.get("cursor_text", c["on_accent"])
+    c["term_selection_bg"] = t.get("selection_background", c["accent"])
+    c["term_selection_fg"] = t.get("selection_foreground", c["on_accent"])
+
+    bad = [k for k, v in c.items() if not is_hex(v)]
+    if bad:
+        sys.exit(f"theme: '{theme_id}' has invalid hex colors: {', '.join(bad)}")
+    c = {k: v.lower() for k, v in c.items()}
+    c["id"] = theme_id
+    c["name"] = theme.get("name", theme_id)
+    c["nvim"] = theme.get("nvim", "")
+    return c
+
+
+# ---------------------------------------------------------------- rendering
+
+EXPR = re.compile(r"\{\{\s*([a-z0-9_]+)\s*((?:\|\s*[a-z_]+\s*(?::\s*[-0-9.]+\s*)?)*)\}\}")
+
+
+def render(text, p, where):
+    def sub(m):
+        key, filters = m.group(1), m.group(2)
+        if key not in p:
+            sys.exit(f"theme: {where}: unknown variable '{key}'")
+        value = p[key]
+        for f in filter(None, (s.strip() for s in filters.split("|"))):
+            name, _, arg = (s.strip() for s in f.partition(":"))
+            if name == "strip":
+                value = value.lstrip("#")
+            elif name == "lighten":
+                value = lighten(value, float(arg))
+            elif name == "alpha":
+                value = "rgba(%d, %d, %d, %s)" % (*rgb(value), arg)
+            elif name == "rgb":
+                value = "%d, %d, %d" % rgb(value)
+            else:
+                sys.exit(f"theme: {where}: unknown filter '{name}'")
+        return value
+
+    return EXPR.sub(sub, text)
+
+
+def write(path, text):
+    path = os.path.expanduser(path)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    try:
+        with open(path) as f:
+            if f.read() == text:
+                return False
+    except OSError:
+        pass
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        f.write(text)
+    os.replace(tmp, path)
+    return True
+
+
+def run_bg(cmd):
+    subprocess.Popen(cmd, shell=isinstance(cmd, str), stdin=subprocess.DEVNULL,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     start_new_session=True)
+
+
+def apply(p):
+    with open(os.path.join(CONF, "outputs.toml"), "rb") as f:
+        outputs = tomllib.load(f)["output"]
+    templates = {}
+    hooks = []
+    for out in outputs:
+        name = out["template"]
+        if name not in templates:
+            with open(os.path.join(CONF, "templates", name)) as f:
+                templates[name] = f.read()
+        changed = write(out["path"], render(templates[name], p, name))
+        if changed and out.get("hook") and out["hook"] not in hooks:
+            hooks.append(out["hook"])
+    for hook in hooks:
+        run_bg(hook)
+    apply_zen(p)
+
+
+ZEN_PREFS = [
+    # load chrome/userChrome.css and userContent.css
+    'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);',
+    # a translucent window (Hyprland blurs behind it) and see-through new tabs
+    'user_pref("zen.widget.linux.transparency", true);',
+    'user_pref("browser.tabs.allow_transparent_browser", true);',
+]
+
+
+def apply_zen(p):
+    # userChrome/userContent.css import the generated files (read when Zen starts)
+    sheets = {}
+    for template, css_file, user_css in (("zen.css", "theme-colors.css", "userChrome.css"),
+                                         ("zen-content.css", "theme-content.css", "userContent.css")):
+        with open(os.path.join(CONF, "templates", template)) as f:
+            sheets[css_file] = (render(f.read(), p, template), user_css)
+    for prefs in (x for pattern in ZEN_PROFILES for x in glob.glob(pattern)):
+        profile = os.path.dirname(prefs)
+        for css_file, (css, user_css) in sheets.items():
+            write(os.path.join(profile, "chrome", css_file), css)
+            ensure_line(os.path.join(profile, "chrome", user_css), f'@import "{css_file}";', first=True)
+        for line in ZEN_PREFS:
+            ensure_line(os.path.join(profile, "user.js"), line)
+
+
+def ensure_line(path, line, first=False):
+    try:
+        with open(path) as f:
+            text = f.read()
+    except OSError:
+        text = ""
+    if line in text.splitlines():
+        return
+    # @import only works before any other rule, so it goes on top
+    write(path, line + "\n" + text if first else text + ("" if text.endswith("\n") or not text else "\n") + line + "\n")
+
+
+# ---------------------------------------------------------------- previews
+
+def preview(theme_id):
+    """A swatch image of the theme, cached until the theme file changes."""
+    os.makedirs(os.path.join(CACHE, "previews"), exist_ok=True)
+    out = os.path.join(CACHE, "previews", theme_id + ".png")
+    src = WALLPAPER_PALETTE if theme_id == "wallpaper" else preset_path(theme_id)
+    if not os.path.isfile(src):
+        return ""
+    if os.path.isfile(out) and os.path.getmtime(out) >= os.path.getmtime(src):
+        return out
+    with open(src, "rb") as f:
+        p = palette(theme_id, tomllib.load(f))
+    draw = [
+        "-fill", p["surface0"], "-draw", "roundrectangle 18,18 282,118 14,14",
+        "-fill", p["accent"], "-draw", "roundrectangle 34,36 170,52 8,8",
+        "-fill", p["text"], "-draw", "roundrectangle 34,66 240,76 5,5",
+        "-fill", p["subtext0"], "-draw", "roundrectangle 34,88 200,98 5,5",
+    ]
+    dots = ["red", "peach", "yellow", "green", "teal", "blue", "mauve", "pink"]
+    for i, name in enumerate(dots):
+        x = 33 + i * 33
+        draw += ["-fill", p[name], "-draw", f"circle {x},158 {x + 12},158"]
+    subprocess.run(["magick", "-size", "300x200", "xc:" + p["base"], *draw, out], check=True)
+    return out
+
+
+# ---------------------------------------------------------------- main
+
+def set_theme(theme_id):
+    p = palette(theme_id, load(theme_id))
+    apply(p)
+    os.makedirs(CACHE, exist_ok=True)
+    write(STATE, theme_id + "\n")
+    print(f"theme: applied {p['name']}")
+
+
+def main():
+    args = sys.argv[1:]
+    cmd = args[0] if args else "current"
+    if cmd == "list":
+        print("wallpaper\tWallpaper (auto)")
+        for theme_id, name in presets():
+            print(f"{theme_id}\t{name}")
+    elif cmd == "current":
+        print(current())
+    elif cmd == "set" and len(args) == 2:
+        set_theme(args[1])
+    elif cmd == "refresh":
+        # presets don't depend on the wallpaper
+        if current() == "wallpaper":
+            set_theme("wallpaper")
+    elif cmd == "preview" and len(args) == 2:
+        print(preview(args[1]))
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main()

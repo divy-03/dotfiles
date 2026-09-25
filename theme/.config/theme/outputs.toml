@@ -1,0 +1,80 @@
+# Where ~/.config/theme/theme writes each rendered template, and how the app
+# picks up the change. Hooks run (in the background) after every file is written.
+# Browsers (Zen userChrome, Chrome/Brave policy) are handled in the script itself.
+
+[[output]]
+template = "hyprland.conf"
+path = "~/.config/hypr/colors.conf"
+# hyprland reloads itself when a sourced file changes
+
+[[output]]
+template = "colors.css"
+path = "~/.config/waybar/colors.css"
+hook = "~/.config/hypr/Scripts/restart-waybar.sh"
+
+[[output]]
+template = "colors.css"
+path = "~/.config/swaync/colors.css"
+hook = "swaync-client -rs"
+
+[[output]]
+template = "colors.css"
+path = "~/.config/swayosd/colors.css"
+hook = "~/.config/hypr/Scripts/restart-swayosd.sh"
+
+[[output]]
+template = "colors.css"
+path = "~/.config/wlogout/colors.css"
+
+[[output]]
+template = "rofi.rasi"
+path = "~/.config/rofi/shared/colors.rasi"
+
+[[output]]
+template = "kitty.conf"
+path = "~/.config/kitty/colors.conf"
+hook = "pkill -SIGUSR1 -x kitty"
+
+[[output]]
+template = "alacritty.toml"
+path = "~/.config/alacritty/colors.toml"
+
+[[output]]
+template = "mako"
+path = "~/.config/mako/colors"
+hook = "makoctl reload"
+
+[[output]]
+template = "cava"
+path = "~/.config/cava/config"
+hook = "pkill -USR2 -x cava"
+
+[[output]]
+template = "yazi-theme.toml"
+path = "~/.config/yazi/theme.toml"
+
+[[output]]
+template = "tmux.conf"
+path = "~/.config/tmux/colors.conf"
+hook = "tmux source-file ~/.config/tmux/colors.conf"
+
+[[output]]
+template = "fzf"
+path = "~/.config/fzf/colors"
+
+[[output]]
+template = "btop.theme"
+path = "~/.config/btop/themes/current.theme"
+
+[[output]]
+template = "gtk.css"
+path = "~/.config/gtk-3.0/colors.css"
+
+[[output]]
+template = "gtk.css"
+path = "~/.config/gtk-4.0/colors.css"
+
+[[output]]
+template = "nvim.lua"
+path = "~/.cache/theme/nvim.lua"
+hook = "pkill -SIGUSR1 -x nvim"

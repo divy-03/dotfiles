@@ -50,5 +50,5 @@ selected_name=$(printf '%b\n' "${entries[@]}" | rofi -dmenu -i -p "🖼 " \
 # Get the full path that matches the chosen filename
 selected_wallpaper=$(printf '%s\n' "${images[@]}" | grep "/$selected_name$")
 
-# Apply wallpaper (awww) and regenerate the desktop colors from it (matugen)
+# Apply wallpaper (awww); regenerates the colors when the wallpaper theme is active
 exec ~/.config/hypr/Scripts/set-wallpaper.sh "$selected_wallpaper"

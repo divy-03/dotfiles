@@ -1,7 +1,6 @@
-# matugen: generates the whole desktop palette from the current wallpaper.
-# Run by ~/.config/hypr/Scripts/set-wallpaper.sh (Super+G picker and login).
-# Templates keep the catppuccin names (base, surface0, mauve, red, ...) so the
-# existing app styles only had to swap their mocha import for the generated one.
+# matugen: turns the current wallpaper into a palette for the "Wallpaper (auto)"
+# theme. It only writes ~/.cache/theme/wallpaper.toml; ~/.config/theme/theme
+# runs it and renders every app's colors from that (same as for the presets).
 
 [config]
 # never prompt for which dominant color to use: take the most saturated of the
@@ -26,81 +25,6 @@ sky = "#89dceb"
 sapphire = "#74c7ec"
 blue = "#89b4fa"
 
-[templates.hyprland]
-input_path = "~/.config/matugen/templates/hyprland.conf"
-output_path = "~/.config/hypr/colors.conf"
-# hyprland reloads itself when a sourced file changes
-
-# (matugen 4.2 only writes the last entry of an output_path array, so one
-# template block per output file)
-[templates.waybar]
-input_path = "~/.config/matugen/templates/colors.css"
-output_path = "~/.config/waybar/colors.css"
-post_hook = "pkill -SIGUSR2 -x waybar; true"
-
-[templates.swaync]
-input_path = "~/.config/matugen/templates/colors.css"
-output_path = "~/.config/swaync/colors.css"
-post_hook = "swaync-client -rs >/dev/null 2>&1; true"
-
-[templates.swayosd]
-input_path = "~/.config/matugen/templates/colors.css"
-output_path = "~/.config/swayosd/colors.css"
-post_hook = "setsid -f ~/.config/hypr/Scripts/restart-swayosd.sh >/dev/null 2>&1; true"
-
-[templates.wlogout]
-input_path = "~/.config/matugen/templates/colors.css"
-output_path = "~/.config/wlogout/colors.css"
-
-[templates.rofi]
-input_path = "~/.config/matugen/templates/rofi.rasi"
-output_path = "~/.config/rofi/shared/colors.rasi"
-
-[templates.kitty]
-input_path = "~/.config/matugen/templates/kitty.conf"
-output_path = "~/.config/kitty/colors.conf"
-post_hook = "pkill -SIGUSR1 -x kitty; true"
-
-[templates.alacritty]
-input_path = "~/.config/matugen/templates/alacritty.toml"
-output_path = "~/.config/alacritty/colors.toml"
-
-[templates.mako]
-input_path = "~/.config/matugen/templates/mako"
-output_path = "~/.config/mako/colors"
-post_hook = "makoctl reload >/dev/null 2>&1; true"
-
-[templates.cava]
-input_path = "~/.config/matugen/templates/cava"
-output_path = "~/.config/cava/config"
-post_hook = "pkill -USR2 -x cava; true"
-
-[templates.yazi]
-input_path = "~/.config/matugen/templates/yazi-theme.toml"
-output_path = "~/.config/yazi/theme.toml"
-
-[templates.tmux]
-input_path = "~/.config/matugen/templates/tmux.conf"
-output_path = "~/.config/tmux/colors.conf"
-post_hook = "tmux source-file ~/.config/tmux/colors.conf >/dev/null 2>&1; true"
-
-[templates.fzf]
-input_path = "~/.config/matugen/templates/fzf"
-output_path = "~/.config/fzf/colors"
-
-[templates.btop]
-input_path = "~/.config/matugen/templates/btop.theme"
-output_path = "~/.config/btop/themes/matugen.theme"
-
-[templates.gtk3]
-input_path = "~/.config/matugen/templates/gtk.css"
-output_path = "~/.config/gtk-3.0/colors.css"
-
-[templates.gtk4]
-input_path = "~/.config/matugen/templates/gtk.css"
-output_path = "~/.config/gtk-4.0/colors.css"
-
-[templates.nvim]
-input_path = "~/.config/matugen/templates/nvim.lua"
-output_path = "~/.cache/matugen/nvim.lua"
-post_hook = "pkill -SIGUSR1 -x nvim; true"
+[templates.palette]
+input_path = "~/.config/matugen/templates/palette.toml"
+output_path = "~/.cache/theme/wallpaper.toml"
