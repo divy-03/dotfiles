@@ -49,12 +49,5 @@ selected_name=$(printf '%b\n' "${entries[@]}" | rofi -dmenu -i -p "🖼 " \
 # Get the full path that matches the chosen filename
 selected_wallpaper=$(printf '%s\n' "${images[@]}" | grep "/$selected_name$")
 
-# Apply wallpaper with awww
-if [[ "$selected_wallpaper" == *.gif ]]; then
-  awww img "$selected_wallpaper" --transition-type none
-else
-  awww img "$selected_wallpaper" --transition-type any --transition-fps 60 --transition-duration 1.5
-fi
-
-# Optional: Save current wallpaper to a file for persistence
-echo "$selected_wallpaper" >"$HOME/.cache/current_wallpaper"
+# Apply wallpaper (awww) and regenerate the desktop colors from it (matugen)
+exec ~/.config/hypr/Scripts/set-wallpaper.sh "$selected_wallpaper"
