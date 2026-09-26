@@ -5,7 +5,8 @@ A theme is a palette with the Catppuccin color names (base, surface0, text,
 red, ...) plus an accent. It comes either from a preset in themes/*.toml or
 from the current wallpaper (matugen writes ~/.cache/theme/wallpaper.toml).
 Every template in templates/ is rendered with it (see outputs.toml), then the
-apps are told to reload. Zen gets the palette through userChrome/userContent.
+apps are told to reload. Zen gets the palette through userChrome/userContent,
+Obsidian through a CSS snippet in every vault.
 
 usage:
   theme list                  presets as "id<TAB>name" (plus "wallpaper")
@@ -22,6 +23,8 @@ lighten: N (HSL lightness +N%, negative darkens).
 
 import colorsys
 import glob
+import json
+import math
 import os
 import re
 import subprocess
@@ -43,8 +46,13 @@ COLORS = [
     "surface0", "base", "mantle", "crust", "accent",
 ]
 
+# Obsidian: vaults are listed here; each gets .obsidian/snippets/desktop-theme.css
+OBSIDIAN_VAULTS = os.path.join(HOME, ".config/obsidian/obsidian.json")
 # Zen: every profile gets chrome/theme-colors.css (+ theme-content.css)
 ZEN_PROFILES = [os.path.join(HOME, ".zen/*/prefs.js")]
+KDEGLOBALS = os.path.join(HOME, ".config/kdeglobals")
+KDE_SCHEME = "DesktopTheme"
+KDE_SCHEME_FILE = os.path.join(HOME, ".local/share/color-schemes", KDE_SCHEME + ".colors")
 
 
 # ---------------------------------------------------------------- colors
@@ -91,8 +99,97 @@ def current():
         return DEFAULT_THEME
 
 
+# ---------------------------------------------------------------- noir
+
+# wallpapers whose average chroma is below this are mostly black/gray; Material
+# You would tint every surface with their faint color and our fixed hues look
+# pastel on them, so they get the noir palette instead
+NOIR_MAX_CHROMA = 0.08
+
+
+def wallpaper_colors(path):
+    """(average chroma, glow color or None) of an image, from a 200x200 sample."""
+    raw = subprocess.run(["magick", path, "-resize", "200x200!", "-depth", "8", "rgb:-"],
+                         check=True, capture_output=True).stdout
+    total = 0.0
+    x = y = weight = 0.0  # chroma-weighted circular mean of the vivid hues
+    for i in range(0, len(raw) - 2, 3):
+        r, g, b = raw[i] / 255, raw[i + 1] / 255, raw[i + 2] / 255
+        chroma = max(r, g, b) - min(r, g, b)
+        total += chroma
+        if chroma > 0.35 and max(r, g, b) > 0.35:
+            h = colorsys.rgb_to_hsv(r, g, b)[0] * 2 * math.pi
+            x += chroma * math.cos(h)
+            y += chroma * math.sin(h)
+            weight += chroma
+    pixels = len(raw) // 3
+    glow = None
+    if weight > pixels * 0.0002:
+        hue = (math.atan2(y, x) / (2 * math.pi)) % 1.0
+        glow = to_hex(*(c * 255 for c in colorsys.hls_to_rgb(hue, 0.5, 0.78)))
+    return total / pixels, glow
+
+
+def luminance(hex_):
+    return sum(w * c / 255 for w, c in zip((0.2126, 0.7152, 0.0722), rgb(hex_)))
+
+
+def noir(glow, name):
+    """Near-black grayscale palette with white text. With a glow color (the
+    wallpaper's, or Noir Red's), that color is used only on window borders,
+    cava's bar tops and errors; without one everything is pure grayscale."""
+    colors = {
+        "crust": "#000000", "mantle": "#070707", "base": "#0b0b0b",
+        "surface0": "#161616", "surface1": "#222222", "surface2": "#2e2e2e",
+        "overlay0": "#474747", "overlay1": "#5b5b5b", "overlay2": "#707070",
+        "subtext0": "#8c8c8c", "subtext1": "#a8a8a8", "text": "#e0e0e0",
+        "accent": "#d4d4d4", "mauve": "#d4d4d4", "on_accent": "#0b0b0b",
+        "accent_container": glow or "#3a3a3a", "secondary": "#707070",
+        "pink": "#c4c4c4", "lavender": "#bcbcbc", "flamingo": "#cfcfcf", "rosewater": "#eeeeee",
+        # decorative hues become grays (cava, waybar modules, ...)
+        "teal": "#8a8a8a", "sky": "#9c9c9c", "sapphire": "#7e7e7e", "blue": "#a4a4a4",
+    }
+    if glow:
+        # semantic colors stay recognizable, just muted
+        colors.update({
+            "red": glow if is_reddish(glow) else "#d24b55",
+            "maroon": lighten(glow, -10), "peach": "#c68a62",
+            "yellow": "#cbb27f", "green": "#8ea879",
+        })
+        ansi = {"color4": "#9aa4ae", "color12": "#b0b8c0", "color5": "#b8a2b8",
+                "color13": "#ccbacc", "color6": "#95abab", "color14": "#aac0c0"}
+    else:
+        # errors/warnings/success told apart by lightness only
+        colors.update({"red": "#f0f0f0", "maroon": "#bdbdbd", "peach": "#d0d0d0",
+                       "yellow": "#c8c8c8", "green": "#9a9a9a"})
+        ansi = {"color1": "#b5b5b5", "color9": "#cfcfcf", "color2": "#8f8f8f",
+                "color10": "#a9a9a9", "color3": "#c4c4c4", "color11": "#dcdcdc",
+                "color4": "#9c9c9c", "color12": "#b6b6b6", "color5": "#aaaaaa",
+                "color13": "#c4c4c4", "color6": "#a2a2a2", "color14": "#bcbcbc"}
+    terminal = {
+        "cursor": "#e0e0e0", "cursor_text": "#0b0b0b",
+        "selection_background": "#c8c8c8", "selection_foreground": "#0b0b0b",
+        "color0": "#1a1a1a", "color8": "#474747", "color7": "#a8a8a8", "color15": "#eeeeee",
+        **ansi,
+    }
+    return {"name": name, "nvim": "", "colors": colors, "terminal": terminal}
+
+
+def is_reddish(hex_):
+    h = colorsys.rgb_to_hls(*(c / 255 for c in rgb(hex_)))[0]
+    return h < 0.05 or h > 0.93
+
+
+def dump_toml(theme):
+    lines = [f'name = "{theme["name"]}"', f'nvim = "{theme["nvim"]}"']
+    for table in ("colors", "terminal"):
+        lines += ["", f"[{table}]"] + [f'{k} = "{v}"' for k, v in theme[table].items()]
+    return "\n".join(lines) + "\n"
+
+
 def wallpaper_theme():
-    """Run matugen on the current wallpaper and load the palette it writes."""
+    """Palette from the current wallpaper: noir for dark, colorless ones,
+    otherwise matugen's (Material You)."""
     try:
         with open(CURRENT_WALLPAPER) as f:
             wall = f.read().strip()
@@ -106,6 +203,13 @@ def wallpaper_theme():
         # matugen can't read animated gifs reliably; use the first frame
         src = os.path.join(CACHE, "wallpaper-frame.png")
         subprocess.run(["magick", wall + "[0]", src], check=True)
+
+    chroma, glow = wallpaper_colors(src)
+    if chroma < NOIR_MAX_CHROMA:
+        theme = noir(glow, "Wallpaper (noir)")
+        os.makedirs(CACHE, exist_ok=True)
+        write(WALLPAPER_PALETTE, dump_toml(theme))
+        return theme
 
     env = dict(os.environ)
     # matugen is a cargo install; Hyprland's exec PATH doesn't include ~/.cargo/bin
@@ -225,6 +329,9 @@ def apply(p):
     for hook in hooks:
         run_bg(hook)
     apply_zen(p)
+    apply_obsidian(p)
+    apply_kde(p)
+    apply_accent(p)
 
 
 ZEN_PREFS = [
@@ -250,6 +357,87 @@ def apply_zen(p):
             ensure_line(os.path.join(profile, "chrome", user_css), f'@import "{css_file}";', first=True)
         for line in ZEN_PREFS:
             ensure_line(os.path.join(profile, "user.js"), line)
+
+
+def apply_obsidian(p):
+    try:
+        with open(OBSIDIAN_VAULTS) as f:
+            vaults = [v["path"] for v in json.load(f).get("vaults", {}).values()]
+    except (OSError, ValueError):
+        return
+    with open(os.path.join(CONF, "templates", "obsidian.css")) as f:
+        css = render(f.read(), p, "obsidian.css")
+    for vault in vaults:
+        config = os.path.join(vault, ".obsidian")
+        if not os.path.isdir(config):
+            continue
+        write(os.path.join(config, "snippets", "desktop-theme.css"), css)
+        # enable the snippet once (Obsidian > Settings > Appearance > CSS snippets)
+        appearance = os.path.join(config, "appearance.json")
+        try:
+            with open(appearance) as f:
+                settings = json.load(f)
+        except (OSError, ValueError):
+            settings = {}
+        enabled = settings.setdefault("enabledCssSnippets", [])
+        if "desktop-theme" not in enabled:
+            enabled.append("desktop-theme")
+            write(appearance, json.dumps(settings, indent=2))
+
+
+def apply_kde(p):
+    """Qt/KDE apps (Dolphin, ...) read their palette from kdeglobals' color groups."""
+    with open(os.path.join(CONF, "templates", "kde.colors")) as f:
+        scheme = render(f.read(), p, "kde.colors").replace(", ", ",")
+    write(KDE_SCHEME_FILE, f"[General]\nName={p['name']}\nColorScheme={KDE_SCHEME}\n\n" + scheme)
+    try:
+        with open(KDEGLOBALS) as f:
+            text = f.read()
+    except OSError:
+        text = ""
+    # keep every group except the color ones, which the scheme replaces
+    kept, skip = [], False
+    for line in text.splitlines():
+        if line.startswith("["):
+            skip = line.startswith(("[Colors:", "[ColorEffects:", "[WM]"))
+        if not skip:
+            kept.append(line)
+    text = "\n".join(kept).strip() + "\n"
+    for group in ("General", "UiSettings"):
+        entry = f"ColorScheme={KDE_SCHEME}"
+        if f"[{group}]" not in text:
+            text += f"\n[{group}]\n{entry}\n"
+        else:
+            body = re.search(rf"^\[{group}\]\n(?:(?!\[).*\n?)*", text, re.M)
+            block = re.sub(r"^ColorScheme=.*\n?", "", body.group(0), flags=re.M).rstrip("\n")
+            text = text[:body.start()] + f"{block}\n{entry}\n\n" + text[body.end():].lstrip("\n")
+    text = text.rstrip("\n") + "\n\n" + scheme.split("\n", 2)[2].strip() + "\n"
+    if write(KDEGLOBALS, text):
+        # running KDE apps repaint on this signal (KGlobalSettings::PaletteChanged)
+        run_bg(["dbus-send", "--session", "--type=signal", "/KGlobalSettings",
+                "org.kde.KGlobalSettings.notifyChange", "int32:0", "int32:0"])
+
+
+GNOME_ACCENTS = [  # libadwaita's accent colors, by hue
+    ("red", 0), ("orange", 30), ("yellow", 50), ("green", 130), ("teal", 180),
+    ("blue", 215), ("purple", 275), ("pink", 330), ("red", 360),
+]
+
+
+def apply_accent(p):
+    """The system accent (portal apps, libadwaita fallbacks) nearest the theme's."""
+    h, l, s = colorsys.rgb_to_hls(*(c / 255 for c in rgb(p["accent"])))
+    if s < 0.15 or l > 0.9 or l < 0.1:
+        accent = "slate"
+    else:
+        accent = min(GNOME_ACCENTS, key=lambda a: abs(a[1] - h * 360))[0]
+    key = ["org.gnome.desktop.interface", "accent-color"]
+    try:
+        if subprocess.run(["gsettings", "get", *key], capture_output=True,
+                          text=True).stdout.strip() != f"'{accent}'":
+            subprocess.run(["gsettings", "set", *key, accent])
+    except OSError:
+        pass
 
 
 def ensure_line(path, line, first=False):

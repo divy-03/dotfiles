@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# GTK3 apps only re-read ~/.config/gtk-3.0/gtk.css when the theme changes, so
+# flip the theme away and back; running apps then pick up the new colors.
+# (libadwaita/GTK4 apps watch their gtk.css and reload on their own.)
+iface=org.gnome.desktop.interface
+# the real theme comes from settings.ini, never from gsettings: a run that
+# overlaps another would read the temporary "Adwaita" and keep it
+theme=$(sed -n 's/^gtk-theme-name *= *//p' ~/.config/gtk-3.0/settings.ini)
+theme=${theme:-adw-gtk3-dark}
+exec 9>"${XDG_RUNTIME_DIR:-/tmp}/theme-reload-gtk.lock"
+flock 9
+gsettings set "$iface" gtk-theme Adwaita
+sleep 0.5
+gsettings set "$iface" gtk-theme "$theme"

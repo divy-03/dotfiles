@@ -69,10 +69,12 @@ path = "~/.config/btop/themes/current.theme"
 [[output]]
 template = "gtk.css"
 path = "~/.config/gtk-3.0/colors.css"
+hook = "~/.config/theme/reload-gtk"
 
 [[output]]
-template = "gtk.css"
+template = "gtk4.css"
 path = "~/.config/gtk-4.0/colors.css"
+hook = "~/.config/theme/reload-gtk"
 
 [[output]]
 template = "nvim.lua"
