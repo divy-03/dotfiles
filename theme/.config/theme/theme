@@ -15,6 +15,7 @@ usage:
   theme refresh               regenerate the wallpaper theme if it is active
                               (run after the wallpaper changes)
   theme preview <id>          print the path of a swatch image (for rofi)
+  theme menu                  print id, name, preview and current flag per theme (for rofi)
 
 Template syntax: {{key}} or {{key | filter | ...}} with the filters
 strip (hex without "#"), alpha: 0.9 (rgba(...)), rgb ("r, g, b") and
@@ -479,6 +480,17 @@ def preview(theme_id):
     return out
 
 
+def wallpaper_thumb():
+    """The wallpaper picker's thumbnail of the current wallpaper, if it made one."""
+    try:
+        with open(CURRENT_WALLPAPER) as f:
+            name = os.path.splitext(os.path.basename(f.read().strip()))[0]
+    except OSError:
+        return ""
+    thumb = os.path.join(HOME, ".cache/rofi/wallpaper-thumbs", name + ".png")
+    return thumb if os.path.isfile(thumb) else ""
+
+
 # ---------------------------------------------------------------- main
 
 def set_theme(theme_id):
@@ -506,6 +518,12 @@ def main():
             set_theme("wallpaper")
     elif cmd == "preview" and len(args) == 2:
         print(preview(args[1]))
+    elif cmd == "menu":
+        # everything the rofi picker needs in one run: id, name, preview, current
+        active = current()
+        for theme_id, name in [("wallpaper", "Wallpaper (auto)"), *presets()]:
+            icon = wallpaper_thumb() if theme_id == "wallpaper" else ""
+            print(f"{theme_id}\t{name}\t{icon or preview(theme_id)}\t{int(theme_id == active)}")
     else:
         sys.exit(__doc__)
 
