@@ -14,7 +14,9 @@ generate_thumbnail() {
 
   # Only regenerate if thumbnail doesn't exist or source is newer
   if [[ ! -f "$dest" ]] || [[ "$source" -nt "$dest" ]]; then
-    convert "$source" -resize 300x200^ -gravity center -extent 300x200 "$dest" 2>/dev/null
+    # [0]: only the first frame of a gif (otherwise magick writes name-0.png,
+    # name-1.png, ... and never "$dest", so the gif was redone on every open)
+    magick "${source}[0]" -resize 300x200^ -gravity center -extent 300x200 "$dest" 2>/dev/null
   fi
 }
 
