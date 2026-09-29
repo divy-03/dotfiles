@@ -54,6 +54,8 @@ ZEN_PROFILES = [os.path.join(HOME, ".zen/*/prefs.js")]
 KDEGLOBALS = os.path.join(HOME, ".config/kdeglobals")
 KDE_SCHEME = "DesktopTheme"
 KDE_SCHEME_FILE = os.path.join(HOME, ".local/share/color-schemes", KDE_SCHEME + ".colors")
+# Kreo keyboard backlight: the color for ./kreo, which reads it once the keyboard is free
+KEYBOARD = os.path.join(CACHE, "keyboard")
 
 
 # ---------------------------------------------------------------- colors
@@ -333,6 +335,7 @@ def apply(p):
     apply_obsidian(p)
     apply_kde(p)
     apply_accent(p)
+    apply_keyboard(p)
 
 
 ZEN_PREFS = [
@@ -439,6 +442,32 @@ def apply_accent(p):
             subprocess.run(["gsettings", "set", *key, accent])
     except OSError:
         pass
+
+
+def keyboard_color(p):
+    """The accent for RGB LEDs, which light a pastel up almost white: the same
+    hue, more saturated, at full brightness and in linear light (LED duty is
+    linear, screen colors are gamma encoded). Gray themes take their glow
+    color if they have one, else white."""
+    for color in (p["accent"], p["accent_container"]):
+        h, s, _ = colorsys.rgb_to_hsv(*(c / 255 for c in rgb(color)))
+        if s >= 0.15:
+            break
+    else:
+        return "#ffffff"
+
+    def linear(c):
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    return to_hex(*(255 * linear(c) for c in colorsys.hsv_to_rgb(h, s ** 0.4, 1)))
+
+
+def apply_keyboard(p):
+    """The Kreo Swarm 75 backlight in the accent; its effect is kept (see ./kreo).
+    In the background: a write takes a few seconds, and without the receiver
+    or with the keyboard asleep it just fails."""
+    write(KEYBOARD, keyboard_color(p) + "\n")
+    run_bg([os.path.join(CONF, "kreo"), "set", "@" + KEYBOARD])
 
 
 def ensure_line(path, line, first=False):
