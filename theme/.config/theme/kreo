@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-"""Backlight of a Kreo Swarm 75 on its 2.4G receiver, without Kreo Kontrol.
+"""Backlight of a Kreo Swarm 75, on USB or its 2.4G receiver, without Kreo Kontrol.
 
-Speaks Kontrol's wireless "bytech" protocol over /dev/hidraw; the udev rule
-from Kontrol's Linux installer (/etc/udev/rules.d/70-kreo.rules) already gives
-the logged-in user access. Byte layouts match what Kontrol's own driver writes.
+Speaks Kontrol's "bytech" protocol over /dev/hidraw: on USB 520-byte feature
+reports, through the receiver 19-byte packets. Byte layouts match what
+Kontrol's own driver writes. The logged-in user needs access to the hidraw
+nodes, which Kontrol's Linux installer sets up in /etc/udev/rules.d/70-kreo.rules
+(pass it --devices 3554:fa09,258a:010c for both the receiver and USB).
 
 Only the lighting of the preset effects is written: which effect runs, and its
 brightness, speed and color. The rest of those blocks (debounce, sleep timer,
 NKRO, ...) goes back exactly as read, and keymaps, macros and per-key colors
-are never written. The first write saves the original state to restore.
+are never written. The keyboard keeps separate lighting for USB and 2.4G, so
+each link is set on its own, and the first write on a link saves its original
+state to restore.
 
 usage:
-  kreo status                          effect, color, brightness, speed, battery
+  kreo status                          connection, effect, color, brightness, speed, battery
   kreo set <#rrggbb|@file> [--effect E] [--brightness 0-4] [--speed 0-4] [--dry-run]
                                        one color for the current effect (left
                                        alone if it takes none), or for effect E,
@@ -20,8 +24,8 @@ usage:
                                        so of several queued runs the newest wins
   kreo effects                         effects that take a color
   kreo backup [dir]                    save the lighting state (read only)
-  kreo restore [dir]                   put a backup's lighting back
-                                       (default: the one taken before the first write)
+  kreo restore [dir]                   put a backup's lighting back (default: the
+                                       one taken before the first write on this link)
 """
 
 import fcntl
@@ -30,18 +34,7 @@ import select
 import sys
 import time
 
-REPORT = 0x13
-VID_PID = "00003554:0000FA09"
-VENDOR_USAGE = bytes([0x06, 0x02, 0xFF, 0x09, 0x02])  # usage page 0xFF02, usage 2
-
-GET_ONLINE, GET_POWER = 0x07, 0x4A
-GET_PROFILE, SET_PROFILE = 0x44, 0x04
-GET_COLORS, SET_COLORS = 0x49, 0x09
-GET_CUSTOM = 0x42  # per-key colors, only ever read (for backups)
-READS = {GET_ONLINE, GET_POWER, GET_PROFILE, GET_COLORS, GET_CUSTOM}
-WRITES = {SET_PROFILE, SET_COLORS}
-
-PROFILE_LEN, COLORS_LEN, COLORS_WRITE_LEN = 128, 490, 512
+PROFILE_LEN = 128
 TRAILER = b"\x5a\xa5"
 EFFECT_TABLE = 56  # "ff ff", then (brightness, speed << 4 | color mode) per effect
 BRIGHTNESS_MAX = SPEED_MAX = 4
@@ -61,52 +54,62 @@ SET_PROFILE_BYTES = {9, 10} | {EFFECT_TABLE + 2 * e + k for e in EFFECTS for k i
 SET_COLOR_BYTES = {21 * e + k for e in EFFECTS for k in range(3)}
 
 DATA = os.path.join(os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share")), "kreo")
-ORIGINAL = os.path.join(DATA, "original")
+UDEV_HINT = ("run Kontrol's Linux installer with --devices 3554:fa09,258a:010c, "
+             "or add a udev rule like its own for 258a:010c")
 
 
 class KreoError(Exception):
     pass
 
 
-def checksum(body):
-    return (REPORT + sum(body)) & 0xFF
-
-
-def packets(cmd, payload):
-    """A write split into 19-byte packets: cmd, count, index, length, 14 bytes, checksum."""
-    count = -(-len(payload) // 14)
-    out = []
-    for i in range(count):
-        chunk = payload[i * 14:(i + 1) * 14]
-        body = bytes([cmd, count, i, len(chunk)]) + chunk.ljust(14, b"\0")
-        out.append(body + bytes([checksum(body)]))
-    return out
-
-
-def find_hidraw():
+def find_hidraw(hid_id, usage):
+    """The hidraw node of the device's vendor interface, or None."""
     for dev in sorted(os.listdir("/sys/class/hidraw")):
         base = f"/sys/class/hidraw/{dev}/device"
         try:
             with open(f"{base}/uevent") as f:
-                if VID_PID not in f.read().upper():
+                if hid_id not in f.read().upper():
                     continue
             with open(f"{base}/report_descriptor", "rb") as f:
-                if VENDOR_USAGE in f.read():
+                if usage in f.read():
                     return f"/dev/{dev}"
         except OSError:
             continue
-    raise KreoError("Kreo receiver not found (is the 2.4G dongle plugged in?)")
+    return None
 
 
 class Receiver:
-    def __init__(self, path=None):
-        self.fd = os.open(path or find_hidraw(), os.O_RDWR | os.O_NONBLOCK)
+    """The 2.4G receiver: 19-byte packets on report 0x13, acknowledged one by one."""
+    NAME, KEY = "2.4G receiver", "2.4g"
+    HID_ID = "00003554:0000FA09"
+    USAGE = bytes([0x06, 0x02, 0xFF, 0x09, 0x02])  # usage page 0xFF02, usage 2
+    REPORT = 0x13
+    COLORS_LEN = 490
+    GET_ONLINE = 0x07
+    GETS = {"profile": 0x44, "colors": 0x49, "custom": 0x42, "power": 0x4A}
+    SETS = {"profile": 0x04, "colors": 0x09}
+
+    def __init__(self, path):
+        self.fd = os.open(path, os.O_RDWR | os.O_NONBLOCK)
 
     def close(self):
         os.close(self.fd)
 
+    def checksum(self, body):
+        return (self.REPORT + sum(body)) & 0xFF
+
+    def packets(self, cmd, payload):
+        """A write split into packets: cmd, count, index, length, 14 bytes, checksum."""
+        count = -(-len(payload) // 14)
+        out = []
+        for i in range(count):
+            chunk = payload[i * 14:(i + 1) * 14]
+            body = bytes([cmd, count, i, len(chunk)]) + chunk.ljust(14, b"\0")
+            out.append(body + bytes([self.checksum(body)]))
+        return out
+
     def send(self, packet):
-        os.write(self.fd, bytes([REPORT]) + packet)
+        os.write(self.fd, bytes([self.REPORT]) + packet)
 
     def recv(self, cmd, deadline):
         """The next packet answering cmd (keypresses and battery pushes are skipped)."""
@@ -114,10 +117,10 @@ class Receiver:
             if not select.select([self.fd], [], [], left)[0]:
                 break
             data = os.read(self.fd, 64)
-            if len(data) < 20 or data[0] != REPORT or data[1] != cmd:
+            if len(data) < 20 or data[0] != self.REPORT or data[1] != cmd:
                 continue
             p = data[1:20]
-            if checksum(p[:18]) != p[18]:
+            if self.checksum(p[:18]) != p[18]:
                 raise KreoError(f"bad checksum from keyboard: {p.hex(' ')}")
             if p[1] & 0x80:
                 raise KreoError(f"keyboard reported an error for command 0x{cmd:02x}")
@@ -129,11 +132,11 @@ class Receiver:
             os.read(self.fd, 64)
 
     def get(self, cmd, timeout=1.5):
-        if cmd not in READS:
+        if cmd not in {self.GET_ONLINE, *self.GETS.values()}:
             raise KreoError(f"refusing to send 0x{cmd:02x}: not a read")
         self.drain()
         body = bytes([cmd, 1, 0, 0]) + bytes(14)
-        self.send(body + bytes([checksum(body)]))
+        self.send(body + bytes([self.checksum(body)]))
         chunks, deadline = {}, time.monotonic() + timeout
         while (p := self.recv(cmd, deadline)) is not None:
             chunks[p[2]] = p[4:4 + (p[3] & 0x0F)]
@@ -141,12 +144,17 @@ class Receiver:
                 return b"".join(chunks[i] for i in range(len(chunks)))
         raise KreoError(f"no answer to 0x{cmd:02x}: is the keyboard on and awake?")
 
-    def put(self, cmd, payload):
-        if cmd not in WRITES:
-            raise KreoError(f"refusing to send 0x{cmd:02x}: only lighting is written")
+    def online(self):
+        return self.get(self.GET_ONLINE) == b"\x01"
+
+    def read(self, what):
+        return self.get(self.GETS[what])
+
+    def write(self, what, payload):
+        cmd = self.SETS[what]
         self.drain()
         time.sleep(0.06)
-        for i, packet in enumerate(packets(cmd, payload)):
+        for i, packet in enumerate(self.packets(cmd, payload)):
             self.send(packet)
             ack = self.recv(cmd, time.monotonic() + 1.0)
             if ack is None or ack[2] != i:
@@ -156,11 +164,93 @@ class Receiver:
         time.sleep(0.1)
 
 
-def read_state(rx):
-    if rx.get(GET_ONLINE) != b"\x01":
-        raise KreoError("the receiver says the keyboard is offline")
-    profile, colors = rx.get(GET_PROFILE), rx.get(GET_COLORS)
+def hid_feature_ioctl(nr, size):
+    return (3 << 30) | (size << 16) | (ord("H") << 8) | nr  # _IOWR('H', nr, size)
+
+
+class Wired:
+    """USB: 519-byte feature reports on report 6; a query, then the answer."""
+    NAME, KEY = "USB", "usb"
+    HID_ID = "0000258A:0000010C"
+    USAGE = bytes([0x06, 0x00, 0xFF, 0x09, 0x01])  # usage page 0xFF00, usage 1
+    REPORT, SIZE = 0x06, 520
+    COLORS_LEN = 483
+    # name -> (command, sub-command, length)
+    GETS = {"profile": (0x84, 0, PROFILE_LEN), "colors": (0x8A, 0, COLORS_LEN),
+            "custom": (0x86, 0, 384), "power": (0x87, 2, 2), "attributes": (0x82, 1, 6)}
+    SETS = {"profile": 0x04, "colors": 0x0A}
+
+    def __init__(self, path):
+        self.fd = os.open(path, os.O_RDWR)
+
+    def close(self):
+        os.close(self.fd)
+
+    def set_feature(self, cmd, sub, length, payload=b""):
+        if cmd not in {g[0] for g in self.GETS.values()} | set(self.SETS.values()):
+            raise KreoError(f"refusing to send 0x{cmd:02x}: only reads and lighting")
+        body = bytes([cmd, sub, 0, 1, 0, length & 0xFF, length >> 8]) + payload
+        buf = bytes([self.REPORT]) + body.ljust(self.SIZE - 1, b"\0")
+        fcntl.ioctl(self.fd, hid_feature_ioctl(0x06, len(buf)), buf)  # HIDIOCSFEATURE
+
+    def get_feature(self):
+        buf = bytearray(self.SIZE)
+        buf[0] = self.REPORT
+        fcntl.ioctl(self.fd, hid_feature_ioctl(0x07, len(buf)), buf, True)  # HIDIOCGFEATURE
+        return bytes(buf[1:])
+
+    def read(self, what):
+        cmd, sub, length = self.GETS[what]
+        for _ in range(3):
+            time.sleep(0.02)
+            self.set_feature(cmd, sub, length)
+            time.sleep(0.02)
+            r = self.get_feature()
+            if r[0] == cmd and r[5] | r[6] << 8 == length:
+                return r[7:7 + length]
+        raise KreoError(f"no proper answer to 0x{cmd:02x} over USB")
+
+    def online(self):
+        return len(self.read("attributes")) == 6
+
+    def write(self, what, payload):
+        time.sleep(0.08)
+        self.set_feature(self.SETS[what], 0, len(payload), payload)
+        time.sleep(0.1)
+
+
+def open_keyboard():
+    """USB first (with a cable in, that is the link in use), else the receiver."""
+    problems = []
+    for kind in (Wired, Receiver):
+        path = find_hidraw(kind.HID_ID, kind.USAGE)
+        if not path:
+            continue
+        try:
+            kb = kind(path)
+        except PermissionError:
+            problems.append(f"no access to {path} ({kind.NAME}): {UDEV_HINT}")
+            continue
+        try:
+            if kb.online():
+                return kb
+            problems.append(f"{kind.NAME}: the keyboard is offline")
+        except (KreoError, OSError) as e:
+            problems.append(f"{kind.NAME}: {e}")
+        kb.close()
+    raise KreoError("; ".join(problems) or "no Kreo keyboard found on USB or a 2.4G receiver")
+
+
+def original(kb):
+    """Where the lighting from before the first write on this link is kept."""
+    return os.path.join(DATA, f"original-{kb.KEY}")
+
+
+def read_state(kb):
+    profile, colors = kb.read("profile"), kb.read("colors")
     check(profile, colors)
+    if len(colors) != kb.COLORS_LEN:
+        raise KreoError("unexpected color table from the keyboard; not touching it")
     return profile, colors
 
 
@@ -169,8 +259,8 @@ def check(profile, colors):
         raise KreoError("unexpected settings block from the keyboard; not touching it")
     if profile[EFFECT_TABLE:EFFECT_TABLE + 2] != b"\xff\xff":
         raise KreoError("effect table not where expected; not touching it")
-    if len(colors) != COLORS_LEN:
-        raise KreoError("unexpected color table from the keyboard; not touching it")
+    if len(colors) not in (Wired.COLORS_LEN, Receiver.COLORS_LEN):
+        raise KreoError("unexpected color table; not touching it")
 
 
 def effect_of(profile):
@@ -190,8 +280,8 @@ def describe(profile, colors):
 
 def colors_write(colors):
     """The color table as Kontrol writes it back: padded to 512, trailer at 506."""
-    out = bytearray(COLORS_WRITE_LEN)
-    out[:COLORS_LEN] = colors
+    out = bytearray(512)
+    out[:len(colors)] = colors
     out[506:508] = TRAILER
     return bytes(out)
 
@@ -217,21 +307,21 @@ def build(profile, colors, rgb, effect, brightness=None, speed=None):
     return bytes(p), bytes(c)
 
 
-def write(rx, old, new):
+def write(kb, old, new):
     (profile, colors), (new_profile, new_colors) = old, new
     if new_colors != colors:
-        rx.put(SET_COLORS, colors_write(new_colors))
+        kb.write("colors", colors_write(new_colors))
     if new_profile != profile:
-        rx.put(SET_PROFILE, new_profile)
-    got = read_state(rx)
+        kb.write("profile", new_profile)
+    got = read_state(kb)
     if got != new:
         raise KreoError("read-back does not match what was written; run `kreo restore`")
 
 
-def save(rx, path, profile, colors):
+def save(kb, path, profile, colors):
     os.makedirs(path, exist_ok=True)
     for name, data in (("profile.bin", profile), ("light_color.bin", colors),
-                       ("custom_light.bin", rx.get(GET_CUSTOM))):
+                       ("custom_light.bin", kb.read("custom"))):
         with open(os.path.join(path, name), "wb") as f:
             f.write(data)
 
@@ -257,7 +347,7 @@ def parse_color(value):
     return bytes.fromhex(h)
 
 
-def cmd_set(rx, args):
+def cmd_set(kb, args):
     color = args[0]
     if color.startswith("@"):
         with open(color[1:]) as f:
@@ -271,7 +361,7 @@ def cmd_set(rx, args):
             opts[arg] = next(rest, "")
         else:
             raise KreoError(f"unknown option {arg!r}")
-    old = read_state(rx)
+    old = read_state(kb)
     effect = parse_effect(opts["--effect"]) if "--effect" in opts else effect_of(old[0])
     if effect not in EFFECTS:
         print(f"kreo: {describe(*old)} takes no color; left as is (pick one with --effect)")
@@ -282,23 +372,23 @@ def cmd_set(rx, args):
     if new == old:
         print(f"kreo: already {describe(*old)}")
         return
-    print(f"kreo: {describe(*old)} -> {describe(*new)}")
+    print(f"kreo: {describe(*old)} -> {describe(*new)} ({kb.NAME})")
     if dry:
         print("kreo: dry run, nothing written")
         return
-    if not os.path.isdir(ORIGINAL):
-        save(rx, ORIGINAL, *old)
-        print(f"kreo: saved the original lighting to {ORIGINAL}")
-    write(rx, old, new)
+    if not os.path.isdir(original(kb)):
+        save(kb, original(kb), *old)
+        print(f"kreo: saved the original {kb.NAME} lighting to {original(kb)}")
+    write(kb, old, new)
 
 
-def cmd_restore(rx, path):
+def cmd_restore(kb, path):
     with open(os.path.join(path, "profile.bin"), "rb") as f:
         saved_profile = f.read()
     with open(os.path.join(path, "light_color.bin"), "rb") as f:
         saved_colors = f.read()
     check(saved_profile, saved_colors)
-    old = read_state(rx)
+    old = read_state(kb)
     # only the bytes `set` can change come from the backup; debounce, sleep
     # timer, NKRO and everything else stay as they are now
     p, c = bytearray(old[0]), bytearray(old[1])
@@ -310,7 +400,7 @@ def cmd_restore(rx, path):
     if new == old:
         print(f"kreo: already as in {path}")
         return
-    write(rx, old, new)
+    write(kb, old, new)
     print(f"kreo: restored {describe(*new)}")
 
 
@@ -326,23 +416,23 @@ def main():
     os.makedirs(DATA, exist_ok=True)
     with open(os.path.join(DATA, ".lock"), "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)  # one writer at a time (fast theme switching)
-        rx = Receiver(os.environ.get("KREO_HIDRAW"))
+        kb = open_keyboard()
         try:
             if cmd == "status":
-                profile, colors = read_state(rx)
-                level, charging = rx.get(GET_POWER)[:2]
-                print(describe(profile, colors))
+                profile, colors = read_state(kb)
+                level, charging = kb.read("power")[:2]
+                print(f"{describe(profile, colors)} ({kb.NAME})")
                 print(f"battery {level}%{' (charging)' if charging >> 4 else ''}")
             elif cmd == "set":
-                cmd_set(rx, args[1:])
+                cmd_set(kb, args[1:])
             elif cmd == "backup":
                 path = args[1] if len(args) > 1 else os.path.join(DATA, time.strftime("backup-%Y%m%d-%H%M%S"))
-                save(rx, path, *read_state(rx))
+                save(kb, path, *read_state(kb))
                 print(f"kreo: saved to {path}")
             elif cmd == "restore":
-                cmd_restore(rx, args[1] if len(args) > 1 else ORIGINAL)
+                cmd_restore(kb, args[1] if len(args) > 1 else original(kb))
         finally:
-            rx.close()
+            kb.close()
 
 
 if __name__ == "__main__":
