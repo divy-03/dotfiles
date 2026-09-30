@@ -5,8 +5,9 @@ A theme is a palette with the Catppuccin color names (base, surface0, text,
 red, ...) plus an accent. It comes either from a preset in themes/*.toml or
 from the current wallpaper (matugen writes ~/.cache/theme/wallpaper.toml).
 Every template in templates/ is rendered with it (see outputs.toml), then the
-apps are told to reload. Zen gets the palette through userChrome/userContent,
-Obsidian through a CSS snippet in every vault.
+apps are told to reload. Zen gets the palette through userChrome/userContent
+and tints every website with it through a boost (see zen/), Obsidian through
+a CSS snippet in every vault.
 
 usage:
   theme list                  presets as "id<TAB>name" (plus "wallpaper")
@@ -28,6 +29,7 @@ import json
 import math
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -49,8 +51,17 @@ COLORS = [
 
 # Obsidian: vaults are listed here; each gets .obsidian/snippets/desktop-theme.css
 OBSIDIAN_VAULTS = os.path.join(HOME, ".config/obsidian/obsidian.json")
-# Zen: every profile gets chrome/theme-colors.css (+ theme-content.css)
+# Zen: every profile gets chrome/theme-colors.css (+ theme-content.css) and
+# chrome/theme-boost.json, the boost zen/theme-boost.sys.mjs gives every site
 ZEN_PROFILES = [os.path.join(HOME, ".zen/*/prefs.js")]
+# how strongly websites are tinted, 0 to 1 (a new boost in Zen starts at 0.25)
+ZEN_BOOST_STRENGTH = 0.4
+# files in zen/ -> where they go in Zen's install directory (autoconfig, which
+# loads theme-boost.sys.mjs when Zen starts)
+ZEN_AUTOCONFIG = {
+    "theme-boost-prefs.js": "defaults/pref/theme-boost-prefs.js",
+    "theme-boost.cfg": "theme-boost.cfg",
+}
 KDEGLOBALS = os.path.join(HOME, ".config/kdeglobals")
 KDE_SCHEME = "DesktopTheme"
 KDE_SCHEME_FILE = os.path.join(HOME, ".local/share/color-schemes", KDE_SCHEME + ".colors")
@@ -77,6 +88,22 @@ def lighten(hex_, amount):
 
 def is_hex(v):
     return isinstance(v, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", v) is not None
+
+
+def linear(c):
+    """A gamma encoded (sRGB) channel, 0 to 1, in linear light."""
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def oklab_hue(hex_):
+    """(hue in degrees, chroma) of a color in Oklab."""
+    r, g, b = (linear(c / 255) for c in rgb(hex_))
+    l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+    m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+    s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+    a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s
+    b = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+    return math.degrees(math.atan2(b, a)) % 360, math.hypot(a, b)
 
 
 # ---------------------------------------------------------------- themes
@@ -354,13 +381,59 @@ def apply_zen(p):
                                          ("zen-content.css", "theme-content.css", "userContent.css")):
         with open(os.path.join(CONF, "templates", template)) as f:
             sheets[css_file] = (render(f.read(), p, template), user_css)
+    # the boost is read live by zen/theme-boost.sys.mjs, which Zen's autoconfig loads
+    boost = json.dumps(zen_boost(p), indent=2) + "\n"
     for prefs in (x for pattern in ZEN_PROFILES for x in glob.glob(pattern)):
         profile = os.path.dirname(prefs)
         for css_file, (css, user_css) in sheets.items():
             write(os.path.join(profile, "chrome", css_file), css)
             ensure_line(os.path.join(profile, "chrome", user_css), f'@import "{css_file}";', first=True)
+        write(os.path.join(profile, "chrome", "theme-boost.json"), boost)
         for line in ZEN_PREFS:
             ensure_line(os.path.join(profile, "user.js"), line)
+    # a Zen update may drop them, so they're put back on every theme change
+    install = zen_install_dir()
+    if install:
+        for src, dest in ZEN_AUTOCONFIG.items():
+            with open(os.path.join(CONF, "zen", src)) as f:
+                write(os.path.join(install, dest), f.read())
+
+
+def zen_install_dir():
+    """Where the zen binary is, if we may add files there."""
+    for name in ("zen", "zen-browser"):
+        exe = shutil.which(name)
+        if exe:
+            install = os.path.dirname(os.path.realpath(exe))
+            if os.path.isfile(os.path.join(install, "omni.ja")) and os.access(install, os.W_OK):
+                return install
+    return None
+
+
+def zen_boost(p):
+    """The theme as a Zen boost. Zen tints a page's dark colors toward the
+    boost's accent and its light ones toward that accent turned (in Oklab) to
+    a second hue: here the theme's accent, turned to its text color's hue."""
+    h, l, s = colorsys.rgb_to_hls(*(c / 255 for c in rgb(p["accent"])))
+    accent_hue, accent_chroma = oklab_hue(p["accent"])
+    text_hue, text_chroma = oklab_hue(p["text"])
+    # grays have no hue to turn from or to
+    turn = (text_hue - accent_hue) % 360 if min(accent_chroma, text_chroma) > 0.02 else 0
+    return {
+        "boostName": p["name"],
+        "enableColorBoost": True,
+        # the accent is hsl(dotAngleDeg, 1 - saturation, 0.1 + 0.9 * brightness)
+        "dotAngleDeg": round(h * 360, 3),
+        "saturation": round(1 - s, 4),
+        "brightness": round(max(0.0, (l - 0.1) / 0.9), 4),
+        "secondaryDotAngleDegDelta": round(turn, 3),
+        # the tint strength is 1 - contrast
+        "contrast": 1 - ZEN_BOOST_STRENGTH,
+        "smartInvert": False,
+        "autoTheme": False,
+        "sizeOverride": 1,
+        "changeWasMade": True,
+    }
 
 
 def apply_obsidian(p):
@@ -455,10 +528,6 @@ def keyboard_color(p):
             break
     else:
         return "#ffffff"
-
-    def linear(c):
-        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
-
     return to_hex(*(255 * linear(c) for c in colorsys.hsv_to_rgb(h, s ** 0.4, 1)))
 
 
