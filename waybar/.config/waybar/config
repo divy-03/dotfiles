@@ -95,7 +95,7 @@
         "on-click": "hyprctl dispatch togglespecialworkspace spotify"
     },
     "custom/special-gpt": {
-        "format": "🤖",
+        "format": "󰚩",
         "tooltip": "ChatGPT",
         "on-click": "hyprctl dispatch togglespecialworkspace gpt"
     },

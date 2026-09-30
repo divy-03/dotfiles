@@ -4,11 +4,14 @@
 # instance with `pkill -f "cava -p <config>"`, so sharing one config file would let
 # a waybar restart kill the lock screen's cava too.
 #
-# Wider than the bar version -- this one gets a whole screen instead of a pill.
+# Sized for the visualizer across the bottom of the lock screen: bars x the
+# label's cell width (20px at font_size 25) is the 1920px screen width, and
+# ascii_max_range is 8 levels per row -- 96 draws 12 rows of 44px, half the
+# screen. At that size the cells are whole pixels, so the rows tile without seams.
 
 [general]
 framerate = 20
-bars = 70
+bars = 96
 autosens = 1
 
 [input]
@@ -19,7 +22,7 @@ source = auto
 method = raw
 raw_target = /dev/stdout
 data_format = ascii
-ascii_max_range = 7
+ascii_max_range = 96
 channels = mono
 mono_option = average
 

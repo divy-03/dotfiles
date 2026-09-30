@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-WALLPAPER_DIR="$HOME/Pictures/wallpapers/walls-catppuccin-mocha"
+# WALLPAPER_DIR="$HOME/Pictures/wallpapers/walls-catppuccin-mocha"
+WALLPAPER_DIR="$HOME/Pictures/wallpapers"
 CACHE_DIR="$HOME/.cache/rofi/wallpaper-thumbs"
 
 # Create cache directory if it doesn't exist
@@ -13,7 +14,9 @@ generate_thumbnail() {
 
   # Only regenerate if thumbnail doesn't exist or source is newer
   if [[ ! -f "$dest" ]] || [[ "$source" -nt "$dest" ]]; then
-    convert "$source" -resize 300x200^ -gravity center -extent 300x200 "$dest" 2>/dev/null
+    # [0]: only the first frame of a gif (otherwise magick writes name-0.png,
+    # name-1.png, ... and never "$dest", so the gif was redone on every open)
+    magick "${source}[0]" -resize 300x200^ -gravity center -extent 300x200 "$dest" 2>/dev/null
   fi
 }
 
@@ -49,12 +52,5 @@ selected_name=$(printf '%b\n' "${entries[@]}" | rofi -dmenu -i -p "🖼 " \
 # Get the full path that matches the chosen filename
 selected_wallpaper=$(printf '%s\n' "${images[@]}" | grep "/$selected_name$")
 
-# Apply wallpaper with awww
-if [[ "$selected_wallpaper" == *.gif ]]; then
-  awww img "$selected_wallpaper" --transition-type none
-else
-  awww img "$selected_wallpaper" --transition-type any --transition-fps 60 --transition-duration 1.5
-fi
-
-# Optional: Save current wallpaper to a file for persistence
-echo "$selected_wallpaper" >"$HOME/.cache/current_wallpaper"
+# Apply wallpaper (awww); regenerates the colors when the wallpaper theme is active
+exec ~/.config/hypr/Scripts/set-wallpaper.sh "$selected_wallpaper"

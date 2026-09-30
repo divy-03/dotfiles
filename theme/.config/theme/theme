@@ -1,0 +1,561 @@
+#!/usr/bin/env python3
+"""Apply one color theme to the whole desktop.
+
+A theme is a palette with the Catppuccin color names (base, surface0, text,
+red, ...) plus an accent. It comes either from a preset in themes/*.toml or
+from the current wallpaper (matugen writes ~/.cache/theme/wallpaper.toml).
+Every template in templates/ is rendered with it (see outputs.toml), then the
+apps are told to reload. Zen gets the palette through userChrome/userContent,
+Obsidian through a CSS snippet in every vault.
+
+usage:
+  theme list                  presets as "id<TAB>name" (plus "wallpaper")
+  theme current               the active theme id
+  theme set <id>              switch to a preset, or "wallpaper"
+  theme refresh               regenerate the wallpaper theme if it is active
+                              (run after the wallpaper changes)
+  theme preview <id>          print the path of a swatch image (for rofi)
+  theme menu                  print id, name, preview and current flag per theme (for rofi)
+
+Template syntax: {{key}} or {{key | filter | ...}} with the filters
+strip (hex without "#"), alpha: 0.9 (rgba(...)), rgb ("r, g, b") and
+lighten: N (HSL lightness +N%, negative darkens).
+"""
+
+import colorsys
+import glob
+import json
+import math
+import os
+import re
+import subprocess
+import sys
+import tomllib
+
+HOME = os.path.expanduser("~")
+CONF = os.path.join(HOME, ".config/theme")
+CACHE = os.path.join(HOME, ".cache/theme")
+STATE = os.path.join(CACHE, "current")
+WALLPAPER_PALETTE = os.path.join(CACHE, "wallpaper.toml")
+CURRENT_WALLPAPER = os.path.join(HOME, ".cache/current_wallpaper")
+DEFAULT_THEME = "wallpaper"
+
+COLORS = [
+    "rosewater", "flamingo", "pink", "mauve", "red", "maroon", "peach", "yellow",
+    "green", "teal", "sky", "sapphire", "blue", "lavender", "text", "subtext1",
+    "subtext0", "overlay2", "overlay1", "overlay0", "surface2", "surface1",
+    "surface0", "base", "mantle", "crust", "accent",
+]
+
+# Obsidian: vaults are listed here; each gets .obsidian/snippets/desktop-theme.css
+OBSIDIAN_VAULTS = os.path.join(HOME, ".config/obsidian/obsidian.json")
+# Zen: every profile gets chrome/theme-colors.css (+ theme-content.css)
+ZEN_PROFILES = [os.path.join(HOME, ".zen/*/prefs.js")]
+KDEGLOBALS = os.path.join(HOME, ".config/kdeglobals")
+KDE_SCHEME = "DesktopTheme"
+KDE_SCHEME_FILE = os.path.join(HOME, ".local/share/color-schemes", KDE_SCHEME + ".colors")
+# Kreo keyboard backlight: the color for ./kreo, which reads it once the keyboard is free
+KEYBOARD = os.path.join(CACHE, "keyboard")
+
+
+# ---------------------------------------------------------------- colors
+
+def rgb(hex_):
+    h = hex_.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def to_hex(r, g, b):
+    return "#%02x%02x%02x" % tuple(max(0, min(255, round(c))) for c in (r, g, b))
+
+
+def lighten(hex_, amount):
+    h, l, s = colorsys.rgb_to_hls(*(c / 255 for c in rgb(hex_)))
+    l = max(0.0, min(1.0, l + amount / 100))
+    return to_hex(*(c * 255 for c in colorsys.hls_to_rgb(h, l, s)))
+
+
+def is_hex(v):
+    return isinstance(v, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", v) is not None
+
+
+# ---------------------------------------------------------------- themes
+
+def preset_path(theme_id):
+    return os.path.join(CONF, "themes", theme_id + ".toml")
+
+
+def presets():
+    out = []
+    for path in sorted(glob.glob(os.path.join(CONF, "themes", "*.toml"))):
+        theme_id = os.path.basename(path)[:-5]
+        with open(path, "rb") as f:
+            out.append((theme_id, tomllib.load(f).get("name", theme_id)))
+    return out
+
+
+def current():
+    try:
+        with open(STATE) as f:
+            return f.read().strip() or DEFAULT_THEME
+    except OSError:
+        return DEFAULT_THEME
+
+
+# ---------------------------------------------------------------- noir
+
+# wallpapers whose average chroma is below this are mostly black/gray; Material
+# You would tint every surface with their faint color and our fixed hues look
+# pastel on them, so they get the noir palette instead
+NOIR_MAX_CHROMA = 0.08
+
+
+def wallpaper_colors(path):
+    """(average chroma, glow color or None) of an image, from a 200x200 sample."""
+    raw = subprocess.run(["magick", path, "-resize", "200x200!", "-depth", "8", "rgb:-"],
+                         check=True, capture_output=True).stdout
+    total = 0.0
+    x = y = weight = 0.0  # chroma-weighted circular mean of the vivid hues
+    for i in range(0, len(raw) - 2, 3):
+        r, g, b = raw[i] / 255, raw[i + 1] / 255, raw[i + 2] / 255
+        chroma = max(r, g, b) - min(r, g, b)
+        total += chroma
+        if chroma > 0.35 and max(r, g, b) > 0.35:
+            h = colorsys.rgb_to_hsv(r, g, b)[0] * 2 * math.pi
+            x += chroma * math.cos(h)
+            y += chroma * math.sin(h)
+            weight += chroma
+    pixels = len(raw) // 3
+    glow = None
+    if weight > pixels * 0.0002:
+        hue = (math.atan2(y, x) / (2 * math.pi)) % 1.0
+        glow = to_hex(*(c * 255 for c in colorsys.hls_to_rgb(hue, 0.5, 0.78)))
+    return total / pixels, glow
+
+
+def luminance(hex_):
+    return sum(w * c / 255 for w, c in zip((0.2126, 0.7152, 0.0722), rgb(hex_)))
+
+
+def noir(glow, name):
+    """Near-black grayscale palette with white text. With a glow color (the
+    wallpaper's, or Noir Red's), that color is used only on window borders,
+    cava's bar tops and errors; without one everything is pure grayscale."""
+    colors = {
+        "crust": "#000000", "mantle": "#070707", "base": "#0b0b0b",
+        "surface0": "#161616", "surface1": "#222222", "surface2": "#2e2e2e",
+        "overlay0": "#474747", "overlay1": "#5b5b5b", "overlay2": "#707070",
+        "subtext0": "#8c8c8c", "subtext1": "#a8a8a8", "text": "#e0e0e0",
+        "accent": "#d4d4d4", "mauve": "#d4d4d4", "on_accent": "#0b0b0b",
+        "accent_container": glow or "#3a3a3a", "secondary": "#707070",
+        "pink": "#c4c4c4", "lavender": "#bcbcbc", "flamingo": "#cfcfcf", "rosewater": "#eeeeee",
+        # decorative hues become grays (cava, waybar modules, ...)
+        "teal": "#8a8a8a", "sky": "#9c9c9c", "sapphire": "#7e7e7e", "blue": "#a4a4a4",
+    }
+    if glow:
+        # semantic colors stay recognizable, just muted
+        colors.update({
+            "red": glow if is_reddish(glow) else "#d24b55",
+            "maroon": lighten(glow, -10), "peach": "#c68a62",
+            "yellow": "#cbb27f", "green": "#8ea879",
+        })
+        ansi = {"color4": "#9aa4ae", "color12": "#b0b8c0", "color5": "#b8a2b8",
+                "color13": "#ccbacc", "color6": "#95abab", "color14": "#aac0c0"}
+    else:
+        # errors/warnings/success told apart by lightness only
+        colors.update({"red": "#f0f0f0", "maroon": "#bdbdbd", "peach": "#d0d0d0",
+                       "yellow": "#c8c8c8", "green": "#9a9a9a"})
+        ansi = {"color1": "#b5b5b5", "color9": "#cfcfcf", "color2": "#8f8f8f",
+                "color10": "#a9a9a9", "color3": "#c4c4c4", "color11": "#dcdcdc",
+                "color4": "#9c9c9c", "color12": "#b6b6b6", "color5": "#aaaaaa",
+                "color13": "#c4c4c4", "color6": "#a2a2a2", "color14": "#bcbcbc"}
+    terminal = {
+        "cursor": "#e0e0e0", "cursor_text": "#0b0b0b",
+        "selection_background": "#c8c8c8", "selection_foreground": "#0b0b0b",
+        "color0": "#1a1a1a", "color8": "#474747", "color7": "#a8a8a8", "color15": "#eeeeee",
+        **ansi,
+    }
+    return {"name": name, "nvim": "", "colors": colors, "terminal": terminal}
+
+
+def is_reddish(hex_):
+    h = colorsys.rgb_to_hls(*(c / 255 for c in rgb(hex_)))[0]
+    return h < 0.05 or h > 0.93
+
+
+def dump_toml(theme):
+    lines = [f'name = "{theme["name"]}"', f'nvim = "{theme["nvim"]}"']
+    for table in ("colors", "terminal"):
+        lines += ["", f"[{table}]"] + [f'{k} = "{v}"' for k, v in theme[table].items()]
+    return "\n".join(lines) + "\n"
+
+
+def wallpaper_theme():
+    """Palette from the current wallpaper: noir for dark, colorless ones,
+    otherwise matugen's (Material You)."""
+    try:
+        with open(CURRENT_WALLPAPER) as f:
+            wall = f.read().strip()
+    except OSError:
+        wall = ""
+    if not os.path.isfile(wall):
+        sys.exit(f"theme: no current wallpaper ({CURRENT_WALLPAPER}); set one with Super+G")
+
+    src = wall
+    if wall.lower().endswith(".gif"):
+        # matugen can't read animated gifs reliably; use the first frame
+        src = os.path.join(CACHE, "wallpaper-frame.png")
+        subprocess.run(["magick", wall + "[0]", src], check=True)
+
+    chroma, glow = wallpaper_colors(src)
+    if chroma < NOIR_MAX_CHROMA:
+        theme = noir(glow, "Wallpaper (noir)")
+        os.makedirs(CACHE, exist_ok=True)
+        write(WALLPAPER_PALETTE, dump_toml(theme))
+        return theme
+
+    env = dict(os.environ)
+    # matugen is a cargo install; Hyprland's exec PATH doesn't include ~/.cargo/bin
+    env["PATH"] = os.path.join(HOME, ".cargo/bin") + os.pathsep + env.get("PATH", "")
+    subprocess.run(["matugen", "image", src, "-m", "dark", "-q"], check=True, env=env)
+    with open(WALLPAPER_PALETTE, "rb") as f:
+        return tomllib.load(f)
+
+
+def load(theme_id):
+    if theme_id == "wallpaper":
+        return wallpaper_theme()
+    path = preset_path(theme_id)
+    if not os.path.isfile(path):
+        sys.exit(f"theme: unknown theme '{theme_id}' (see `theme list`)")
+    with open(path, "rb") as f:
+        return tomllib.load(f)
+
+
+def palette(theme_id, theme):
+    """Flatten a theme file into the variables the templates can use."""
+    c = dict(theme.get("colors", {}))
+    missing = [k for k in COLORS if k not in c]
+    if missing:
+        sys.exit(f"theme: '{theme_id}' is missing colors: {', '.join(missing)}")
+    c.setdefault("on_accent", c["crust"])
+    c.setdefault("accent_container", c["accent"])
+    c.setdefault("secondary", c["lavender"])
+
+    # terminal: exact ANSI colors when the theme has them, else derived
+    t = theme.get("terminal", {})
+    base16 = ["surface1", "red", "green", "yellow", "blue", "pink", "teal", "subtext1"]
+    for i, name in enumerate(base16):
+        c[f"color{i}"] = t.get(f"color{i}", c[name])
+        bright = c["surface2"] if i == 0 else c["text"] if i == 7 else lighten(c[name], 5)
+        c[f"color{i + 8}"] = t.get(f"color{i + 8}", bright)
+    c["term_bg"] = t.get("background", c["base"])
+    c["term_fg"] = t.get("foreground", c["text"])
+    c["term_cursor"] = t.get("cursor", c["accent"])
+    c["term_cursor_text"] = t.get("cursor_text", c["on_accent"])
+    c["term_selection_bg"] = t.get("selection_background", c["accent"])
+    c["term_selection_fg"] = t.get("selection_foreground", c["on_accent"])
+
+    bad = [k for k, v in c.items() if not is_hex(v)]
+    if bad:
+        sys.exit(f"theme: '{theme_id}' has invalid hex colors: {', '.join(bad)}")
+    c = {k: v.lower() for k, v in c.items()}
+    c["id"] = theme_id
+    c["name"] = theme.get("name", theme_id)
+    c["nvim"] = theme.get("nvim", "")
+    return c
+
+
+# ---------------------------------------------------------------- rendering
+
+EXPR = re.compile(r"\{\{\s*([a-z0-9_]+)\s*((?:\|\s*[a-z_]+\s*(?::\s*[-0-9.]+\s*)?)*)\}\}")
+
+
+def render(text, p, where):
+    def sub(m):
+        key, filters = m.group(1), m.group(2)
+        if key not in p:
+            sys.exit(f"theme: {where}: unknown variable '{key}'")
+        value = p[key]
+        for f in filter(None, (s.strip() for s in filters.split("|"))):
+            name, _, arg = (s.strip() for s in f.partition(":"))
+            if name == "strip":
+                value = value.lstrip("#")
+            elif name == "lighten":
+                value = lighten(value, float(arg))
+            elif name == "alpha":
+                value = "rgba(%d, %d, %d, %s)" % (*rgb(value), arg)
+            elif name == "rgb":
+                value = "%d, %d, %d" % rgb(value)
+            else:
+                sys.exit(f"theme: {where}: unknown filter '{name}'")
+        return value
+
+    return EXPR.sub(sub, text)
+
+
+def write(path, text):
+    path = os.path.expanduser(path)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    try:
+        with open(path) as f:
+            if f.read() == text:
+                return False
+    except OSError:
+        pass
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        f.write(text)
+    os.replace(tmp, path)
+    return True
+
+
+def run_bg(cmd):
+    subprocess.Popen(cmd, shell=isinstance(cmd, str), stdin=subprocess.DEVNULL,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     start_new_session=True)
+
+
+def apply(p):
+    with open(os.path.join(CONF, "outputs.toml"), "rb") as f:
+        outputs = tomllib.load(f)["output"]
+    templates = {}
+    hooks = []
+    for out in outputs:
+        name = out["template"]
+        if name not in templates:
+            with open(os.path.join(CONF, "templates", name)) as f:
+                templates[name] = f.read()
+        changed = write(out["path"], render(templates[name], p, name))
+        if changed and out.get("hook") and out["hook"] not in hooks:
+            hooks.append(out["hook"])
+    for hook in hooks:
+        run_bg(hook)
+    apply_zen(p)
+    apply_obsidian(p)
+    apply_kde(p)
+    apply_accent(p)
+    apply_keyboard(p)
+
+
+ZEN_PREFS = [
+    # load chrome/userChrome.css and userContent.css
+    'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);',
+    # a translucent window (Hyprland blurs behind it) and see-through new tabs
+    'user_pref("zen.widget.linux.transparency", true);',
+    'user_pref("browser.tabs.allow_transparent_browser", true);',
+]
+
+
+def apply_zen(p):
+    # userChrome/userContent.css import the generated files (read when Zen starts)
+    sheets = {}
+    for template, css_file, user_css in (("zen.css", "theme-colors.css", "userChrome.css"),
+                                         ("zen-content.css", "theme-content.css", "userContent.css")):
+        with open(os.path.join(CONF, "templates", template)) as f:
+            sheets[css_file] = (render(f.read(), p, template), user_css)
+    for prefs in (x for pattern in ZEN_PROFILES for x in glob.glob(pattern)):
+        profile = os.path.dirname(prefs)
+        for css_file, (css, user_css) in sheets.items():
+            write(os.path.join(profile, "chrome", css_file), css)
+            ensure_line(os.path.join(profile, "chrome", user_css), f'@import "{css_file}";', first=True)
+        for line in ZEN_PREFS:
+            ensure_line(os.path.join(profile, "user.js"), line)
+
+
+def apply_obsidian(p):
+    try:
+        with open(OBSIDIAN_VAULTS) as f:
+            vaults = [v["path"] for v in json.load(f).get("vaults", {}).values()]
+    except (OSError, ValueError):
+        return
+    with open(os.path.join(CONF, "templates", "obsidian.css")) as f:
+        css = render(f.read(), p, "obsidian.css")
+    for vault in vaults:
+        config = os.path.join(vault, ".obsidian")
+        if not os.path.isdir(config):
+            continue
+        write(os.path.join(config, "snippets", "desktop-theme.css"), css)
+        # enable the snippet once (Obsidian > Settings > Appearance > CSS snippets)
+        appearance = os.path.join(config, "appearance.json")
+        try:
+            with open(appearance) as f:
+                settings = json.load(f)
+        except (OSError, ValueError):
+            settings = {}
+        enabled = settings.setdefault("enabledCssSnippets", [])
+        if "desktop-theme" not in enabled:
+            enabled.append("desktop-theme")
+            write(appearance, json.dumps(settings, indent=2))
+
+
+def apply_kde(p):
+    """Qt/KDE apps (Dolphin, ...) read their palette from kdeglobals' color groups."""
+    with open(os.path.join(CONF, "templates", "kde.colors")) as f:
+        scheme = render(f.read(), p, "kde.colors").replace(", ", ",")
+    write(KDE_SCHEME_FILE, f"[General]\nName={p['name']}\nColorScheme={KDE_SCHEME}\n\n" + scheme)
+    try:
+        with open(KDEGLOBALS) as f:
+            text = f.read()
+    except OSError:
+        text = ""
+    # keep every group except the color ones, which the scheme replaces
+    kept, skip = [], False
+    for line in text.splitlines():
+        if line.startswith("["):
+            skip = line.startswith(("[Colors:", "[ColorEffects:", "[WM]"))
+        if not skip:
+            kept.append(line)
+    text = "\n".join(kept).strip() + "\n"
+    for group in ("General", "UiSettings"):
+        entry = f"ColorScheme={KDE_SCHEME}"
+        if f"[{group}]" not in text:
+            text += f"\n[{group}]\n{entry}\n"
+        else:
+            body = re.search(rf"^\[{group}\]\n(?:(?!\[).*\n?)*", text, re.M)
+            block = re.sub(r"^ColorScheme=.*\n?", "", body.group(0), flags=re.M).rstrip("\n")
+            text = text[:body.start()] + f"{block}\n{entry}\n\n" + text[body.end():].lstrip("\n")
+    text = text.rstrip("\n") + "\n\n" + scheme.split("\n", 2)[2].strip() + "\n"
+    if write(KDEGLOBALS, text):
+        # running KDE apps repaint on this signal (KGlobalSettings::PaletteChanged)
+        run_bg(["dbus-send", "--session", "--type=signal", "/KGlobalSettings",
+                "org.kde.KGlobalSettings.notifyChange", "int32:0", "int32:0"])
+
+
+GNOME_ACCENTS = [  # libadwaita's accent colors, by hue
+    ("red", 0), ("orange", 30), ("yellow", 50), ("green", 130), ("teal", 180),
+    ("blue", 215), ("purple", 275), ("pink", 330), ("red", 360),
+]
+
+
+def apply_accent(p):
+    """The system accent (portal apps, libadwaita fallbacks) nearest the theme's."""
+    h, l, s = colorsys.rgb_to_hls(*(c / 255 for c in rgb(p["accent"])))
+    if s < 0.15 or l > 0.9 or l < 0.1:
+        accent = "slate"
+    else:
+        accent = min(GNOME_ACCENTS, key=lambda a: abs(a[1] - h * 360))[0]
+    key = ["org.gnome.desktop.interface", "accent-color"]
+    try:
+        if subprocess.run(["gsettings", "get", *key], capture_output=True,
+                          text=True).stdout.strip() != f"'{accent}'":
+            subprocess.run(["gsettings", "set", *key, accent])
+    except OSError:
+        pass
+
+
+def keyboard_color(p):
+    """The accent for RGB LEDs, which light a pastel up almost white: the same
+    hue, more saturated, at full brightness and in linear light (LED duty is
+    linear, screen colors are gamma encoded). Gray themes take their glow
+    color if they have one, else white."""
+    for color in (p["accent"], p["accent_container"]):
+        h, s, _ = colorsys.rgb_to_hsv(*(c / 255 for c in rgb(color)))
+        if s >= 0.15:
+            break
+    else:
+        return "#ffffff"
+
+    def linear(c):
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    return to_hex(*(255 * linear(c) for c in colorsys.hsv_to_rgb(h, s ** 0.4, 1)))
+
+
+def apply_keyboard(p):
+    """The Kreo Swarm 75 backlight in the accent; its effect is kept (see ./kreo).
+    In the background: a write takes a few seconds, and without the receiver
+    or with the keyboard asleep it just fails."""
+    write(KEYBOARD, keyboard_color(p) + "\n")
+    run_bg([os.path.join(CONF, "kreo"), "set", "@" + KEYBOARD])
+
+
+def ensure_line(path, line, first=False):
+    try:
+        with open(path) as f:
+            text = f.read()
+    except OSError:
+        text = ""
+    if line in text.splitlines():
+        return
+    # @import only works before any other rule, so it goes on top
+    write(path, line + "\n" + text if first else text + ("" if text.endswith("\n") or not text else "\n") + line + "\n")
+
+
+# ---------------------------------------------------------------- previews
+
+def preview(theme_id):
+    """A swatch image of the theme, cached until the theme file changes."""
+    os.makedirs(os.path.join(CACHE, "previews"), exist_ok=True)
+    out = os.path.join(CACHE, "previews", theme_id + ".png")
+    src = WALLPAPER_PALETTE if theme_id == "wallpaper" else preset_path(theme_id)
+    if not os.path.isfile(src):
+        return ""
+    if os.path.isfile(out) and os.path.getmtime(out) >= os.path.getmtime(src):
+        return out
+    with open(src, "rb") as f:
+        p = palette(theme_id, tomllib.load(f))
+    draw = [
+        "-fill", p["surface0"], "-draw", "roundrectangle 18,18 282,118 14,14",
+        "-fill", p["accent"], "-draw", "roundrectangle 34,36 170,52 8,8",
+        "-fill", p["text"], "-draw", "roundrectangle 34,66 240,76 5,5",
+        "-fill", p["subtext0"], "-draw", "roundrectangle 34,88 200,98 5,5",
+    ]
+    dots = ["red", "peach", "yellow", "green", "teal", "blue", "mauve", "pink"]
+    for i, name in enumerate(dots):
+        x = 33 + i * 33
+        draw += ["-fill", p[name], "-draw", f"circle {x},158 {x + 12},158"]
+    subprocess.run(["magick", "-size", "300x200", "xc:" + p["base"], *draw, out], check=True)
+    return out
+
+
+def wallpaper_thumb():
+    """The wallpaper picker's thumbnail of the current wallpaper, if it made one."""
+    try:
+        with open(CURRENT_WALLPAPER) as f:
+            name = os.path.splitext(os.path.basename(f.read().strip()))[0]
+    except OSError:
+        return ""
+    thumb = os.path.join(HOME, ".cache/rofi/wallpaper-thumbs", name + ".png")
+    return thumb if os.path.isfile(thumb) else ""
+
+
+# ---------------------------------------------------------------- main
+
+def set_theme(theme_id):
+    p = palette(theme_id, load(theme_id))
+    apply(p)
+    os.makedirs(CACHE, exist_ok=True)
+    write(STATE, theme_id + "\n")
+    print(f"theme: applied {p['name']}")
+
+
+def main():
+    args = sys.argv[1:]
+    cmd = args[0] if args else "current"
+    if cmd == "list":
+        print("wallpaper\tWallpaper (auto)")
+        for theme_id, name in presets():
+            print(f"{theme_id}\t{name}")
+    elif cmd == "current":
+        print(current())
+    elif cmd == "set" and len(args) == 2:
+        set_theme(args[1])
+    elif cmd == "refresh":
+        # presets don't depend on the wallpaper
+        if current() == "wallpaper":
+            set_theme("wallpaper")
+    elif cmd == "preview" and len(args) == 2:
+        print(preview(args[1]))
+    elif cmd == "menu":
+        # everything the rofi picker needs in one run: id, name, preview, current
+        active = current()
+        for theme_id, name in [("wallpaper", "Wallpaper (auto)"), *presets()]:
+            icon = wallpaper_thumb() if theme_id == "wallpaper" else ""
+            print(f"{theme_id}\t{name}\t{icon or preview(theme_id)}\t{int(theme_id == active)}")
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main()

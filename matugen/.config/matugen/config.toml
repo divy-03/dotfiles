@@ -1,0 +1,30 @@
+# matugen: turns the current wallpaper into a palette for the "Wallpaper (auto)"
+# theme. It only writes ~/.cache/theme/wallpaper.toml; ~/.config/theme/theme
+# runs it and renders every app's colors from that (same as for the presets).
+
+[config]
+# never prompt for which dominant color to use: take the most saturated of the
+# candidates (the most dominant one is usually a washed-out gray-blue)
+prefer = "saturation"
+caching = false
+
+# fixed hues. The accent-ish ones are harmonized (blended) towards the
+# wallpaper so they fit; the semantic ones (errors, warnings, git diffs) keep
+# their hue so red still reads as red.
+[config.custom_colors]
+rosewater = "#f5e0dc"
+flamingo = "#f2cdcd"
+pink = "#f5c2e7"
+red = { color = "#f38ba8", blend = false }
+maroon = { color = "#eba0ac", blend = false }
+peach = { color = "#fab387", blend = false }
+yellow = { color = "#f9e2af", blend = false }
+green = { color = "#a6e3a1", blend = false }
+teal = "#94e2d5"
+sky = "#89dceb"
+sapphire = "#74c7ec"
+blue = "#89b4fa"
+
+[templates.palette]
+input_path = "~/.config/matugen/templates/palette.toml"
+output_path = "~/.cache/theme/wallpaper.toml"
