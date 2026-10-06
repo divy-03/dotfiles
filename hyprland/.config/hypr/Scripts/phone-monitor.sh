@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 # Toggle an Android phone as a secondary monitor over USB.
 # Creates a Hyprland headless output, serves it with wayvnc on localhost, and
-# tunnels it to the phone with `adb reverse`. Open a VNC client on the phone
-# (e.g. bVNC) and connect to localhost:5900.
+# reaches the phone either over USB (`adb reverse`, connect to localhost:5900)
+# or over Tailscale (wayvnc bound to the laptop's tailnet IP, connect to
+# <tailscale-ip>:5900). Open a VNC client on the phone (e.g. bVNC).
+#
+# Link: PHONE_LINK=usb|tailscale|auto (default auto = USB if a phone is
+# authorized via adb, otherwise Tailscale).
 #
 # Usage: phone-monitor.sh [WxH[@R]] [scale]   (default 1920x1080@120, scale 1.5)
 #        phone-monitor.sh pos 0|1|2           move the phone screen (live)
+#        phone-monitor.sh scale <n>|up|down   change the phone scale (live, +/-0.25)
 #
 # Position (also remembered across restarts):
 #   0 = left of the laptop, bottom-aligned
@@ -15,6 +20,7 @@
 
 POSFILE="${XDG_STATE_HOME:-$HOME/.local/state}/phone-monitor.position"
 PORT=5900
+BIND=127.0.0.1
 STATE="${XDG_RUNTIME_DIR:-/tmp}/phone-monitor.state" # line 1: output, 2: mode, 3: scale
 
 notify() {
@@ -25,7 +31,7 @@ notify() {
 stop() {
   local name
   name="$(head -n1 "$STATE" 2>/dev/null)"
-  pkill -f "wayvnc.*127.0.0.1 $PORT" 2>/dev/null
+  pkill -f "wayvnc.* $PORT$" 2>/dev/null
   adb reverse --remove "tcp:$PORT" >/dev/null 2>&1
   [ -n "$name" ] && hyprctl output remove "$name" >/dev/null 2>&1
   rm -f "$STATE"
@@ -59,6 +65,27 @@ place() {
   hyprctl --batch "keyword monitor $pname,$pmode,${px}x${py},$pscale ; keyword monitor $name,$mode,${qx}x${qy},$scale" >/dev/null
 }
 
+# scale N | scale up | scale down: change the phone's scale live (and remember it)
+if [ "$1" = "scale" ]; then
+  [ -f "$STATE" ] || { echo "phone monitor is not running" >&2; exit 1; }
+  { read -r sname; read -r smode; read -r sscale; } <"$STATE"
+  [ -n "$smode" ] || smode="1920x1080@120"
+  [ -n "$sscale" ] || sscale=1.5
+  case "$2" in
+  up) new=$(awk -v s="$sscale" 'BEGIN{printf "%g", s+0.25}') ;;
+  down) new=$(awk -v s="$sscale" 'BEGIN{n=s-0.25; if(n<0.5)n=0.5; printf "%g", n}') ;;
+  *) new="$2" ;;
+  esac
+  awk -v n="$new" 'BEGIN{exit !(n ~ /^[0-9]+(\.[0-9]+)?$/ && n+0 > 0)}' || {
+    echo "usage: $0 scale <number>|up|down" >&2
+    exit 1
+  }
+  printf '%s\n%s\n%s\n' "$sname" "$smode" "$new" >"$STATE"
+  place "$(cat "$POSFILE" 2>/dev/null || echo 0)" "$sname" "$smode" "$new"
+  notify "scale $new"
+  exit 0
+fi
+
 if [ "$1" = "pos" ] || [ "$1" = "restore" ]; then
   # `restore` re-applies the saved position; hyprland.conf runs it on every
   # config reload, which otherwise resets the phone to Hyprland's auto-right.
@@ -90,17 +117,40 @@ if [ -f "$STATE" ]; then
   exit 0
 fi
 
-for dep in wayvnc adb hyprctl jq; do
+for dep in wayvnc hyprctl jq; do
   command -v "$dep" >/dev/null || {
     notify "Missing dependency: $dep"
     exit 1
   }
 done
 
-if ! adb get-state >/dev/null 2>&1; then
-  notify "No authorized phone via adb (enable USB debugging, accept prompt)"
-  exit 1
+LINK="${PHONE_LINK:-auto}"
+if [ "$LINK" = auto ]; then
+  if command -v adb >/dev/null && adb get-state >/dev/null 2>&1; then LINK=usb; else LINK=tailscale; fi
 fi
+case "$LINK" in
+usb)
+  command -v adb >/dev/null || {
+    notify "Missing dependency: adb"
+    exit 1
+  }
+  adb get-state >/dev/null 2>&1 || {
+    notify "No authorized phone via adb (enable USB debugging, accept prompt)"
+    exit 1
+  }
+  ;;
+tailscale)
+  BIND="$(tailscale ip -4 2>/dev/null | head -n1)"
+  [ -n "$BIND" ] || {
+    notify "Tailscale is not up (no tailnet IP)"
+    exit 1
+  }
+  ;;
+*)
+  notify "PHONE_LINK must be usb, tailscale or auto"
+  exit 1
+  ;;
+esac
 
 before="$(hyprctl monitors -j | jq -r '.[].name' | sort)"
 hyprctl output create headless >/dev/null
@@ -115,12 +165,12 @@ printf '%s\n%s\n%s\n' "$name" "$MODE" "$SCALE" >"$STATE"
 POSITION="${POSITION:-$(cat "$POSFILE" 2>/dev/null)}"
 place "${POSITION:-0}" "$name" "$MODE" "$SCALE"
 
-if ! adb reverse "tcp:$PORT" "tcp:$PORT" >/dev/null; then
+if [ "$LINK" = usb ] && ! adb reverse "tcp:$PORT" "tcp:$PORT" >/dev/null; then
   notify "adb reverse failed"
   stop
   exit 1
 fi
 
-notify "$name up. On phone: VNC client -> localhost:$PORT"
-wayvnc -o "$name" 127.0.0.1 "$PORT" # blocks until killed or client quits
+notify "$name up. On phone: VNC client -> $BIND:$PORT ($LINK)"
+wayvnc -o "$name" "$BIND" "$PORT" # blocks until killed or client quits
 [ -f "$STATE" ] && stop
