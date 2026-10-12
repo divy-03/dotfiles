@@ -7,4 +7,4 @@ for _ in $(seq 30); do
   pgrep -x waybar >/dev/null || break
   sleep 0.1
 done
-setsid -f waybar >/dev/null 2>&1
+setsid -f ~/.config/hypr/Scripts/waybar-main.sh >/dev/null 2>&1
