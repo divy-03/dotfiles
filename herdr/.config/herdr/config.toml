@@ -10,4 +10,4 @@ auto_switch = false
 show_agent_labels_on_pane_borders = true
 
 [ui.sound]
-enabled = true
+enabled = false
