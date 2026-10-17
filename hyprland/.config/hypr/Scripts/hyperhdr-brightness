@@ -1,0 +1,48 @@
+#!/bin/sh
+# Adjust HyperHDR's processing luminance without touching the WLED effect.
+# HyperHDR's classic calibration uses luminanceGain, where 1.0 is peak output.
+
+set -eu
+
+action=${1:-}
+case "$action" in
+  raise) delta=5 ;;
+  lower) delta=-5 ;;
+  *)
+    printf 'usage: %s {raise|lower}\n' "$0" >&2
+    exit 2
+    ;;
+esac
+
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/hyperhdr"
+state_file="$state_dir/brightness-percent"
+lock_file="$state_dir/brightness.lock"
+mkdir -p "$state_dir"
+
+# Knob repeat events can overlap. Serialize them so no increment is lost.
+exec 9>"$lock_file"
+flock -x 9
+
+if [ -r "$state_file" ] && value=$(cat "$state_file") &&
+   printf '%s\n' "$value" | grep -Eq '^[0-9]+$'; then
+  :
+else
+  value=100
+fi
+
+value=$((value + delta))
+[ "$value" -lt 0 ] && value=0
+[ "$value" -gt 100 ] && value=100
+
+gain=$(printf '%s\n' "$value" | awk '{ printf "%.2f", $1 / 100 }')
+payload=$(printf '{"command":"adjustment","adjustment":{"luminanceGain":%s}}' "$gain")
+
+if curl -fsS --connect-timeout 0.2 --max-time 1 \
+    -H 'Content-Type: application/json' \
+    -X POST http://127.0.0.1:8090/json-rpc \
+    --data "$payload" >/dev/null; then
+  printf '%s\n' "$value" > "$state_file"
+else
+  printf '%s\n' 'HyperHDR is not reachable on 127.0.0.1:8090' >&2
+  exit 1
+fi
