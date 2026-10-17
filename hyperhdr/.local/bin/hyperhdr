@@ -1,0 +1,3 @@
+#!/bin/sh
+# HyperHDR from the release tarball, unpacked to ~/.local/opt/hyperhdr
+exec "$HOME/.local/opt/hyperhdr/bin/hyperhdr" --pipewire --desktop "$@"

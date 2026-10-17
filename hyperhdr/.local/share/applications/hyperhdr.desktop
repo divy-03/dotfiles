@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=HyperHDR
+GenericName=HyperHDR Ambient Lighting
+Comment=Screen sync for the WLED strip (web UI on http://localhost:8090)
+Icon=hyperhdr
+Terminal=false
+Exec=sh -c 'exec "$HOME/.local/bin/hyperhdr"'
+Type=Application
+StartupNotify=false
+Categories=AudioVideo;Video;Settings;

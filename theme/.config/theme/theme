@@ -14,6 +14,7 @@ usage:
   theme set <id>              switch to a preset, or "wallpaper"
   theme refresh               regenerate the wallpaper theme if it is active
                               (run after the wallpaper changes)
+  theme wled <#primary> <#secondary>   push two colors to the WLED strip
   theme preview <id>          print the path of a swatch image (for rofi)
   theme menu                  print id, name, preview and current flag per theme (for rofi)
 
@@ -56,6 +57,8 @@ KDE_SCHEME = "DesktopTheme"
 KDE_SCHEME_FILE = os.path.join(HOME, ".local/share/color-schemes", KDE_SCHEME + ".colors")
 # Kreo keyboard backlight: the color for ./kreo, which reads it once the keyboard is free
 KEYBOARD = os.path.join(CACHE, "keyboard")
+# WLED strip (Inlightss kit), found by its mDNS name since the IP is from DHCP
+WLED_HOST = os.environ.get("WLED_HOST", "inlightss-sr-4dd608.local")
 
 
 # ---------------------------------------------------------------- colors
@@ -336,6 +339,7 @@ def apply(p):
     apply_kde(p)
     apply_accent(p)
     apply_keyboard(p)
+    apply_wled(p)
 
 
 ZEN_PREFS = [
@@ -470,6 +474,29 @@ def apply_keyboard(p):
     run_bg([os.path.join(CONF, "kreo"), "set", "@" + KEYBOARD])
 
 
+def apply_wled(p):
+    """The WLED strip's colors in the accent and secondary (LED-adjusted like
+    the keyboard). In the background, since the strip may be off or away."""
+    run_bg([sys.executable, os.path.abspath(__file__), "wled",
+            keyboard_color(p), keyboard_color({**p, "accent": p["secondary"],
+                                               "accent_container": p["secondary"]})])
+
+
+def wled_set(primary, secondary):
+    """Set colors 1 and 2 of every segment; effect, palette and on/off stay."""
+    import urllib.request
+    base = f"http://{WLED_HOST}/json/state"
+    try:
+        with urllib.request.urlopen(base, timeout=5) as r:
+            segments = json.load(r)["seg"]
+        body = {"seg": [{"id": s["id"], "col": [list(rgb(primary)), list(rgb(secondary))]}
+                        for s in segments]}
+        urllib.request.urlopen(urllib.request.Request(
+            base, json.dumps(body).encode(), {"Content-Type": "application/json"}), timeout=5).close()
+    except (OSError, ValueError, KeyError):
+        pass  # strip off or unreachable: nothing to do
+
+
 def ensure_line(path, line, first=False):
     try:
         with open(path) as f:
@@ -545,6 +572,8 @@ def main():
         # presets don't depend on the wallpaper
         if current() == "wallpaper":
             set_theme("wallpaper")
+    elif cmd == "wled" and len(args) == 3:
+        wled_set(args[1], args[2])
     elif cmd == "preview" and len(args) == 2:
         print(preview(args[1]))
     elif cmd == "menu":
