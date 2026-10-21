@@ -1,5 +1,6 @@
 #!/bin/sh
 # Adjust HyperHDR's processing luminance without touching the WLED effect.
+# HyperHDR v22 serves its API over HTTPS only (self-signed, hence -k).
 # HyperHDR's classic calibration uses luminanceGain, where 1.0 is peak output.
 
 set -eu
@@ -37,12 +38,12 @@ value=$((value + delta))
 gain=$(printf '%s\n' "$value" | awk '{ printf "%.2f", $1 / 100 }')
 payload=$(printf '{"command":"adjustment","adjustment":{"luminanceGain":%s}}' "$gain")
 
-if curl -fsS --connect-timeout 0.2 --max-time 1 \
+if curl -fsSk --connect-timeout 0.2 --max-time 1 \
     -H 'Content-Type: application/json' \
-    -X POST http://127.0.0.1:8090/json-rpc \
+    -X POST https://127.0.0.1:8092/json-rpc \
     --data "$payload" >/dev/null; then
   printf '%s\n' "$value" > "$state_file"
 else
-  printf '%s\n' 'HyperHDR is not reachable on 127.0.0.1:8090' >&2
+  printf '%s\n' 'HyperHDR is not reachable on 127.0.0.1:8092' >&2
   exit 1
 fi
