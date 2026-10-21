@@ -58,7 +58,9 @@ KDE_SCHEME_FILE = os.path.join(HOME, ".local/share/color-schemes", KDE_SCHEME + 
 # Kreo keyboard backlight: the color for ./kreo, which reads it once the keyboard is free
 KEYBOARD = os.path.join(CACHE, "keyboard")
 # WLED strip (Inlightss kit), found by its mDNS name since the IP is from DHCP
-WLED_HOST = os.environ.get("WLED_HOST", "inlightss-sr-4dd608.local")
+WLED_HOST = os.environ.get("WLED_HOST")
+WLED_FALLBACK_HOST = "inlightss-sr-4dd608.local"
+HYPERHDR_DB = os.path.join(HOME, ".config/HyperHDR/db/hyperhdr.db")
 
 
 # ---------------------------------------------------------------- colors
@@ -482,19 +484,37 @@ def apply_wled(p):
                                                "accent_container": p["secondary"]})])
 
 
+def wled_hosts():
+    """Where the strip may be: $WLED_HOST, the IP HyperHDR drives it on (mDNS
+    .local names often do not resolve here), then the mDNS name."""
+    hosts = [WLED_HOST]
+    try:
+        import sqlite3
+        with sqlite3.connect("file:" + HYPERHDR_DB + "?mode=ro", uri=True, timeout=1) as db:
+            row = db.execute("SELECT json_extract(config, '$.host') FROM settings "
+                             "WHERE type = 'device' AND json_extract(config, '$.type') = 'wled'").fetchone()
+            hosts.append(row and row[0])
+    except sqlite3.Error:
+        pass
+    hosts.append(WLED_FALLBACK_HOST)
+    return [h for i, h in enumerate(hosts) if h and h not in hosts[:i]]
+
+
 def wled_set(primary, secondary):
     """Set colors 1 and 2 of every segment; effect, palette and on/off stay."""
     import urllib.request
-    base = f"http://{WLED_HOST}/json/state"
-    try:
-        with urllib.request.urlopen(base, timeout=5) as r:
-            segments = json.load(r)["seg"]
-        body = {"seg": [{"id": s["id"], "col": [list(rgb(primary)), list(rgb(secondary))]}
-                        for s in segments]}
-        urllib.request.urlopen(urllib.request.Request(
-            base, json.dumps(body).encode(), {"Content-Type": "application/json"}), timeout=5).close()
-    except (OSError, ValueError, KeyError):
-        pass  # strip off or unreachable: nothing to do
+    for host in wled_hosts():
+        base = f"http://{host}/json/state"
+        try:
+            with urllib.request.urlopen(base, timeout=3) as r:
+                segments = json.load(r)["seg"]
+            body = {"seg": [{"id": s["id"], "col": [list(rgb(primary)), list(rgb(secondary))]}
+                            for s in segments]}
+            urllib.request.urlopen(urllib.request.Request(
+                base, json.dumps(body).encode(), {"Content-Type": "application/json"}), timeout=3).close()
+            return
+        except (OSError, ValueError, KeyError):
+            continue  # try the next address; if none answers the strip is off or away
 
 
 def ensure_line(path, line, first=False):

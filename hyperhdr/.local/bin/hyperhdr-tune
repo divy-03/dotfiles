@@ -1,0 +1,32 @@
+#!/bin/sh
+# Keep the desktop capture and HyperHDR's output cadence aligned: grab at 30 fps
+# (WLED on an ESP gets sluggish above that), smooth at the same 30 Hz over
+# 100 ms for low lag, and leave WLED's refreshTime at its default (0).
+# This runs before HyperHDR starts, so the SQLite settings are not edited while
+# the application is writing them.
+
+set -eu
+
+# The brightness knob only changes HyperHDR live, so a restart is back at 100%.
+rm -f "${XDG_STATE_HOME:-$HOME/.local/state}/hyperhdr/brightness-percent"
+
+db="${XDG_CONFIG_HOME:-$HOME/.config}/HyperHDR/db/hyperhdr.db"
+[ -f "$db" ] || exit 0
+
+sqlite3 "$db" <<'SQL'
+UPDATE settings
+SET config = json_set(config, '$.fps', 30)
+WHERE type = 'systemGrabber';
+
+UPDATE settings
+SET config = json_set(config,
+  '$.enable', json('true'),
+  '$.continuousOutput', json('true'),
+  '$.updateFrequency', 30,
+  '$.time_ms', 100)
+WHERE type = 'smoothing';
+
+UPDATE settings
+SET config = json_set(config, '$.refreshTime', 0)
+WHERE type = 'device' AND json_extract(config, '$.type') = 'wled';
+SQL
