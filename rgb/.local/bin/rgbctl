@@ -1,0 +1,109 @@
+#!/bin/sh
+# Helper for the RGB control centre (quickshell config "rgb"): whatever is
+# easier in shell than in QML (HyperHDR's self-signed HTTPS API, the keyboard,
+# the theme-sync switches).
+#
+#   rgbctl host                       where the WLED strip is
+#   rgbctl screen status              "on", "off" or "down" (HyperHDR not running)
+#   rgbctl screen on|off              start HyperHDR if needed / stop its LED output
+#   rgbctl gain [0-100]               HyperHDR luminance in percent (no argument: read it)
+#   rgbctl keyboard <#hex> [0-4]      Kreo backlight color (and brightness)
+#   rgbctl sync <strip|keyboard> [on|off]   read / set automatic theme sync
+#   rgbctl follow [on|off]            read / set keyboard following the strip's color
+#   rgbctl sync-now                   push the current theme's colors now
+
+set -eu
+
+db="${XDG_CONFIG_HOME:-$HOME/.config}/HyperHDR/db/hyperhdr.db"
+state="${XDG_STATE_HOME:-$HOME/.local/state}/rgb"
+api=https://127.0.0.1:8092/json-rpc
+
+rpc() {
+  curl -fsSk --connect-timeout 0.3 --max-time 2 -H 'Content-Type: application/json' \
+    -X POST "$api" --data "$1"
+}
+
+case "${1:-}" in
+  host)
+    if [ -n "${WLED_HOST:-}" ]; then
+      printf '%s\n' "$WLED_HOST"
+    elif [ -f "$db" ] && h=$(sqlite3 "file:$db?mode=ro" "SELECT json_extract(config, '\$.host') FROM settings WHERE type = 'device' AND json_extract(config, '\$.type') = 'wled'" 2>/dev/null) && [ -n "$h" ]; then
+      printf '%s\n' "$h"
+    else
+      printf '%s\n' inlightss-sr-4dd608.local
+    fi
+    ;;
+  screen)
+    case "${2:-}" in
+      status)
+        if out=$(rpc '{"command":"serverinfo"}' 2>/dev/null); then
+          if printf '%s' "$out" | grep -Eq '"name" *: *"LEDDEVICE" *, *"enabled" *: *true|"enabled" *: *true *, *"name" *: *"LEDDEVICE"'; then
+            echo on
+          else
+            echo off
+          fi
+        else
+          echo down
+        fi
+        ;;
+      on)
+        if ! pgrep -x hyperhdr >/dev/null; then
+          setsid -f "$HOME/.local/bin/hyperhdr" >/dev/null 2>&1 </dev/null
+          i=0
+          until rpc '{"command":"serverinfo"}' >/dev/null 2>&1; do
+            i=$((i + 1))
+            [ "$i" -gt 40 ] && { echo 'HyperHDR did not start' >&2; exit 1; }
+            sleep 0.25
+          done
+        fi
+        rpc '{"command":"componentstate","componentstate":{"component":"ALL","state":true}}' >/dev/null
+        ;;
+      off)
+        rpc '{"command":"componentstate","componentstate":{"component":"LEDDEVICE","state":false}}' >/dev/null || true
+        ;;
+      *) exit 2 ;;
+    esac
+    ;;
+  gain)
+    if [ -z "${2:-}" ]; then
+      cat "${XDG_STATE_HOME:-$HOME/.local/state}/hyperhdr/brightness-percent" 2>/dev/null || echo 100
+      exit 0
+    fi
+    gain=$(printf '%s\n' "$2" | awk '{ printf "%.2f", $1 / 100 }')
+    rpc "{\"command\":\"adjustment\",\"adjustment\":{\"luminanceGain\":$gain}}" >/dev/null
+    mkdir -p "${XDG_STATE_HOME:-$HOME/.local/state}/hyperhdr"
+    printf '%s\n' "$2" > "${XDG_STATE_HOME:-$HOME/.local/state}/hyperhdr/brightness-percent"
+    ;;
+  keyboard)
+    [ -n "${2:-}" ] || exit 2
+    if [ -n "${3:-}" ]; then
+      exec "$HOME/.config/theme/kreo" set "$2" --brightness "$3"
+    fi
+    exec "$HOME/.config/theme/kreo" set "$2"
+    ;;
+  sync)
+    target=${2:-}
+    case "$target" in strip|keyboard) ;; *) exit 2 ;; esac
+    mkdir -p "$state"
+    case "${3:-}" in
+      on) rm -f "$state/sync-$target-off" ;;
+      off) : > "$state/sync-$target-off" ;;
+    esac
+    if [ -e "$state/sync-$target-off" ]; then echo off; else echo on; fi
+    ;;
+  follow)
+    mkdir -p "$state"
+    case "${2:-}" in
+      on) : > "$state/follow-strip" ;;
+      off) rm -f "$state/follow-strip" ;;
+    esac
+    if [ -e "$state/follow-strip" ]; then echo on; else echo off; fi
+    ;;
+  sync-now)
+    exec "$HOME/.config/theme/theme" leds
+    ;;
+  *)
+    sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//' >&2
+    exit 2
+    ;;
+esac

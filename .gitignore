@@ -6,3 +6,4 @@ rofi/.config/rofi/shared/colors.rasi
 alacritty/.config/alacritty/colors.toml
 mako/.config/mako/colors
 yazi/.config/yazi/theme.toml
+rgb/.config/quickshell/rgb/Colors.qml

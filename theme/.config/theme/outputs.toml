@@ -80,3 +80,8 @@ hook = "~/.config/theme/reload-gtk"
 template = "nvim.lua"
 path = "~/.cache/theme/nvim.lua"
 hook = "pkill -SIGUSR1 -x nvim"
+
+[[output]]
+template = "quickshell-colors.qml"
+path = "~/.config/quickshell/rgb/Colors.qml"
+# quickshell reloads itself when its config changes

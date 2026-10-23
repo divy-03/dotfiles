@@ -109,6 +109,7 @@ window#waybar.hidden {
 #custom-launcher,
 #custom-powermenu,
 #custom-swaync,
+#custom-rgb,
 #custom-netspeed,
 #player,
 #custom-special-spotify,
@@ -168,6 +169,14 @@ window#waybar.hidden {
   font-size: 15px;
   border-radius: 8px 0px 0px 8px;
   color: @blue;
+}
+
+#custom-rgb {
+  padding-left: 8px;
+  padding-right: 6px;
+  margin-right: 0;
+  font-size: 17px;
+  color: @flamingo;
 }
 
 #custom-swaync {

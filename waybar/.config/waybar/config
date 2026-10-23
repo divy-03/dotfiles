@@ -25,6 +25,7 @@
         "tray",
         "memory",
         "pulseaudio",
+        "custom/rgb",
         "custom/swaync",
         "battery",
         "custom/powermenu",
@@ -185,6 +186,11 @@
         "format": " ",
         "tooltip": false,
         "on-click": "rofi -show drun"
+    },
+    "custom/rgb": {
+        "format": "󰛨",
+        "tooltip": false,
+        "on-click": "qs -c rgb ipc call rgb toggle"
     },
     "custom/swaync": {
         "tooltip": true,

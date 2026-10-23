@@ -15,6 +15,8 @@ usage:
   theme refresh               regenerate the wallpaper theme if it is active
                               (run after the wallpaper changes)
   theme wled <#primary> <#secondary>   push two colors to the WLED strip
+  theme leds                  push the current theme to the strip and the keyboard
+                              (the RGB control centre's "sync now")
   theme preview <id>          print the path of a swatch image (for rofi)
   theme menu                  print id, name, preview and current flag per theme (for rofi)
 
@@ -57,6 +59,8 @@ KDE_SCHEME = "DesktopTheme"
 KDE_SCHEME_FILE = os.path.join(HOME, ".local/share/color-schemes", KDE_SCHEME + ".colors")
 # Kreo keyboard backlight: the color for ./kreo, which reads it once the keyboard is free
 KEYBOARD = os.path.join(CACHE, "keyboard")
+# the RGB control centre can switch the sync per device off (rgbctl sync)
+RGB_STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.join(HOME, ".local/state"), "rgb")
 # WLED strip (Inlightss kit), found by its mDNS name since the IP is from DHCP
 WLED_HOST = os.environ.get("WLED_HOST")
 WLED_FALLBACK_HOST = "inlightss-sr-4dd608.local"
@@ -340,8 +344,14 @@ def apply(p):
     apply_obsidian(p)
     apply_kde(p)
     apply_accent(p)
-    apply_keyboard(p)
-    apply_wled(p)
+    if sync_enabled("keyboard"):
+        apply_keyboard(p)
+    if sync_enabled("strip"):
+        apply_wled(p)
+
+
+def sync_enabled(device):
+    return not os.path.exists(os.path.join(RGB_STATE, f"sync-{device}-off"))
 
 
 ZEN_PREFS = [
@@ -594,6 +604,10 @@ def main():
             set_theme("wallpaper")
     elif cmd == "wled" and len(args) == 3:
         wled_set(args[1], args[2])
+    elif cmd == "leds":
+        p = palette(current(), load(current()))
+        apply_keyboard(p)
+        apply_wled(p)
     elif cmd == "preview" and len(args) == 2:
         print(preview(args[1]))
     elif cmd == "menu":
