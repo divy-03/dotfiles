@@ -21,6 +21,9 @@ ShellRoot {
     property int kbBrightness: 4
     property bool followStrip: false
     property string lastKb: ""
+    property bool vizOn: false
+    property string vizMode: "grow"
+    property int vizGain: 100
     property int tick: 0
     readonly property string font: "JetBrainsMono Nerd Font"
 
@@ -53,6 +56,7 @@ ShellRoot {
     function refresh() {
         wled.poll()
         ctl(["screen", "status"], function (s) { root.screen = s })
+        ctl(["music", "status"], function (s) { root.vizOn = s === "on" })
     }
 
     function loadSettings() {
@@ -61,11 +65,18 @@ ShellRoot {
         ctl(["sync", "keyboard"], function (s) { root.syncKeyboard = s === "on" })
         ctl(["follow"], function (s) { root.followStrip = s === "on"; if (root.followStrip) followTimer.restart() })
         ctl(["gain"], function (g) { root.gain = parseInt(g) || 100 })
+        ctl(["music", "mode"], function (m) { root.vizMode = m })
+        ctl(["music", "gain"], function (g) { root.vizGain = parseInt(g) || 100 })
         refresh()
     }
 
     // Turn screen sync off before anything that needs the strip to itself.
-    function strip(action) {
+    // Color changes keep the visualizer running (it follows the strip's color).
+    function strip(action, keepViz) {
+        if (root.vizOn && !keepViz) {
+            root.vizOn = false
+            ctl(["music", "off"])
+        }
         if (root.screen === "on") {
             ctl(["screen", "off"], function () {
                 root.screen = "off"
@@ -255,7 +266,7 @@ ShellRoot {
                                 id: stripPicker
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: implicitHeight
-                                onPicked: released => root.strip(function () { wled.setColor(color, released) })
+                                onPicked: released => root.strip(function () { wled.setColor(color, released) }, true)
                                 Connections {
                                     target: wled
                                     function onPolled() {
@@ -266,7 +277,7 @@ ShellRoot {
                             }
                             TempSlider {
                                 Layout.fillWidth: true
-                                onPicked: (c, released) => root.strip(function () { wled.setColor(c, released) })
+                                onPicked: (c, released) => root.strip(function () { wled.setColor(c, released) }, true)
                             }
                             RowLayout {
                                 spacing: 8
@@ -283,7 +294,7 @@ ShellRoot {
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
                                                 stripPicker.setColor(parent.color)
-                                                root.strip(function () { wled.setColor(parent.color, true) })
+                                                root.strip(function () { wled.setColor(parent.color, true) }, true)
                                             }
                                         }
                                     }
@@ -302,6 +313,78 @@ ShellRoot {
                             Layout.fillWidth: true
                             visible: root.tab === "effects" || root.tab === "music"
                             spacing: 8
+
+                            // cava visualizer
+                            ColumnLayout {
+                                visible: root.tab === "music"
+                                Layout.fillWidth: true
+                                spacing: 8
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: "Cava visualizer"
+                                        color: Colors.text
+                                        font { pixelSize: 13; bold: true; family: root.font }
+                                    }
+                                    Toggle {
+                                        checked: root.vizOn
+                                        onToggled: value => {
+                                            root.vizOn = value
+                                            if (!value) {
+                                                root.ctl(["music", "off"])
+                                                return
+                                            }
+                                            var start = function () { root.ctl(["music", "on"], function () { root.refresh() }) }
+                                            if (root.screen === "on")
+                                                root.ctl(["screen", "off"], function () { root.screen = "off"; start() })
+                                            else
+                                                start()
+                                        }
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    Repeater {
+                                        model: [
+                                            { id: "grow", name: "Bass | Treble" },
+                                            { id: "mirror", name: "Mirror" },
+                                            { id: "spectrum", name: "Spectrum" }
+                                        ]
+                                        delegate: Chip {
+                                            required property var modelData
+                                            Layout.fillWidth: true
+                                            label: modelData.name
+                                            active: root.vizMode === modelData.id
+                                            onClicked: {
+                                                root.vizMode = modelData.id
+                                                root.ctl(["music", "mode", modelData.id])
+                                            }
+                                        }
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Text { text: "Gain"; color: Colors.subtext0; Layout.preferredWidth: 64; font { pixelSize: 11; family: root.font } }
+                                    FlatSlider {
+                                        Layout.fillWidth: true
+                                        from: 30; to: 250; step: 5
+                                        value: root.vizGain
+                                        onMoved: (v, released) => {
+                                            if (released) {
+                                                root.vizGain = Math.round(v)
+                                                root.ctl(["music", "gain", String(Math.round(v))])
+                                            }
+                                        }
+                                    }
+                                }
+                                Text {
+                                    text: "WLED effects (sound reactive)"
+                                    color: Colors.subtext0
+                                    font { pixelSize: 11; family: root.font }
+                                }
+                            }
 
                             RowLayout {
                                 visible: root.tab === "music"
@@ -407,6 +490,10 @@ ShellRoot {
                                 Toggle {
                                     checked: root.screen === "on"
                                     onToggled: value => {
+                                        if (value && root.vizOn) {
+                                            root.vizOn = false
+                                            root.ctl(["music", "off"])
+                                        }
                                         root.ctl(["screen", value ? "on" : "off"], function () { root.refresh() })
                                     }
                                 }

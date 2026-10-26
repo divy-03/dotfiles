@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+"""Music visualizer for the WLED strip: cava's spectrum streamed to WLED over
+UDP (realtime DNRGB), in the color picked in the control centre.
+
+    rgbviz <host>            run in the foreground (rgbctl music on starts it)
+
+Layout: segment 1 is the table strip (modes below), segment 2 the monitor
+frame (side bars: bass left, treble right; spectrum on top), segment 3 repeats
+the table.
+
+Table modes (read live from ~/.local/state/rgb/viz-mode):
+    grow      left end grows with bass, right end with treble, meeting in the middle
+    mirror    bass grows out of the centre, treble out of both ends
+    spectrum  every LED is a frequency band: bass left, treble right
+
+Realtime packets carry a 2s timeout, so the strip returns to normal by itself
+when this stops.
+"""
+import json
+import os
+import signal
+import socket
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import urllib.request
+
+PORT = 21324
+FPS = 60
+# LEDs per WLED segment, in order: the table strip, the strip around the
+# monitor (bottom, left side up, top, right side down), and a copy of the table.
+TABLE = 60
+FRAME = (10, 15, 21, 14)
+BARS = 24
+STATE = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")), "rgb")
+
+
+def read_state(name, default):
+    try:
+        with open(os.path.join(STATE, name)) as f:
+            return f.read().strip() or default
+    except OSError:
+        return default
+
+
+def strip_color(host):
+    """The color picked in the control centre: WLED's first segment color."""
+    try:
+        with urllib.request.urlopen(f"http://{host}/json/state", timeout=1) as r:
+            return tuple(json.load(r)["seg"][0]["col"][0][:3])
+    except Exception:
+        return None
+
+
+def led_count(host):
+    try:
+        with urllib.request.urlopen(f"http://{host}/json/info", timeout=3) as r:
+            return json.load(r)["leds"]["count"]
+    except Exception:
+        return 180
+
+
+def cava_config():
+    cfg = f"""[general]
+framerate = {FPS}
+bars = {BARS}
+[input]
+method = pulse
+source = auto
+[output]
+method = raw
+raw_target = /dev/stdout
+data_format = ascii
+ascii_max_range = 1000
+bar_delimiter = 59
+frame_delimiter = 10
+channels = mono
+mono_option = average
+[smoothing]
+noise_reduction = 55
+monstercat = 1
+waves = 0
+"""
+    fd, path = tempfile.mkstemp(prefix="rgbviz-", suffix=".conf")
+    with os.fdopen(fd, "w") as f:
+        f.write(cfg)
+    return path
+
+
+class Band:
+    """Follows one slice of the spectrum, scaled by a slowly decaying peak so
+    quiet treble moves the strip as much as loud bass."""
+
+    def __init__(self, lo, hi):
+        self.lo, self.hi, self.peak, self.level = lo, hi, 0.25, 0.0
+
+    def update(self, bars, gain):
+        raw = max(bars[self.lo:self.hi]) / 1000.0
+        self.peak = max(raw, self.peak * 0.997, 0.15)
+        target = min(raw / self.peak * gain, 1.0)
+        # instant attack, smooth release
+        self.level = target if target > self.level else self.level * 0.88 + target * 0.12
+
+
+def scale(c, v):
+    return (int(c[0] * v), int(c[1] * v), int(c[2] * v))
+
+
+def fill(px, color, length, positions):
+    """Light positions[0..length) in color; the last LED partially."""
+    whole = int(length)
+    for step in range(min(whole + 1, len(positions))):
+        v = 1.0 if step < whole else length - whole
+        i = positions[step]
+        px[i] = tuple(min(255, a + b) for a, b in zip(px[i], scale(color, v)))
+
+
+def render_table(mode, n, color, bass, treble, levels):
+    px = [(0, 0, 0)] * n
+    half = n // 2
+    if mode == "spectrum":
+        for i in range(n):
+            x = i / (n - 1) * (len(levels) - 1)
+            j = min(int(x), len(levels) - 2)
+            px[i] = scale(color, levels[j] + (levels[j + 1] - levels[j]) * (x - j))
+    elif mode == "mirror":
+        fill(px, color, bass * half * 0.9, list(range(half - 1, -1, -1)))
+        fill(px, color, bass * half * 0.9, list(range(half, n)))
+        fill(px, color, treble * half * 0.9, list(range(0, half)))
+        fill(px, color, treble * half * 0.9, list(range(n - 1, half - 1, -1)))
+    else:  # grow
+        fill(px, color, bass * half, list(range(0, half)))
+        fill(px, color, treble * half, list(range(n - 1, half - 1, -1)))
+    return px
+
+
+def render_frame(color, bass, treble, levels):
+    """The strip around the monitor, wired bottom (right to left), up the left
+    side, across the top, down the right side. Sides are vertical level bars:
+    bass on the left, treble on the right. The top is the spectrum, the bottom
+    pulses with the beat."""
+    px = [(0, 0, 0)] * sum(FRAME)
+    bottom, left, top, right = FRAME
+    for i in range(bottom):
+        px[i] = scale(color, bass ** 1.5)
+    fill(px, color, bass * left, list(range(bottom, bottom + left)))
+    t0 = bottom + left
+    for i in range(top):
+        x = i / (top - 1) * (len(levels) - 1)
+        j = min(int(x), len(levels) - 2)
+        px[t0 + i] = scale(color, levels[j] + (levels[j + 1] - levels[j]) * (x - j))
+    r0 = t0 + top
+    fill(px, color, treble * right, list(range(r0 + right - 1, r0 - 1, -1)))
+    return px
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__, file=sys.stderr)
+        return 2
+    addr = None
+    while addr is None:
+        try:
+            addr = socket.gethostbyname(sys.argv[1])
+        except OSError:
+            time.sleep(1)
+    os.makedirs(STATE, exist_ok=True)
+    with open(os.path.join(STATE, "viz.pid"), "w") as f:
+        f.write(str(os.getpid()))
+    n = led_count(addr)
+    color = [(255, 160, 0)]
+
+    def watch_color():
+        while True:
+            c = strip_color(addr)
+            if c and max(c) > 0:
+                color[0] = c
+            time.sleep(1)
+
+    threading.Thread(target=watch_color, daemon=True).start()
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    conf = cava_config()
+    cava = subprocess.Popen(["cava", "-p", conf], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+
+    def stop(*_):
+        cava.terminate()
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+
+    bass = Band(0, 5)
+    treble = Band(BARS * 5 // 8, BARS)
+    levels = [0.0] * BARS
+    mode, gain, checked = "grow", 1.0, 0.0
+    try:
+        for line in cava.stdout:
+            now = time.monotonic()
+            if now - checked > 1.0:
+                checked = now
+                mode = read_state("viz-mode", "grow")
+                try:
+                    gain = float(read_state("viz-gain", "100")) / 100
+                except ValueError:
+                    gain = 1.0
+            vals = [int(v) for v in line.strip().strip(";").split(";") if v]
+            if len(vals) != BARS:
+                continue
+            bass.update(vals, gain)
+            treble.update(vals, gain)
+            # spectrum mode: each bar scaled by its own slow peak, same idea
+            levels = [min(v / 1000.0 / max(bass.peak if k < 5 else treble.peak, 0.15) * gain, 1.0)
+                      for k, v in enumerate(vals)]
+            table = render_table(mode, TABLE, color[0], bass.level, treble.level, levels)
+            px = table + render_frame(color[0], bass.level, treble.level, levels) + table
+            px = (px + [(0, 0, 0)] * n)[:n]
+            pkt = bytearray([4, 2, 0, 0])
+            for r, g, b in px:
+                pkt += bytes((int(r), int(g), int(b)))
+            sock.sendto(bytes(pkt), (addr, PORT))
+    finally:
+        cava.terminate()
+        os.unlink(conf)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

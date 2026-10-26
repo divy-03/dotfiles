@@ -10,6 +10,9 @@
 #   rgbctl keyboard <#hex> [0-4]      Kreo backlight color (and brightness)
 #   rgbctl sync <strip|keyboard> [on|off]   read / set automatic theme sync
 #   rgbctl follow [on|off]            read / set keyboard following the strip's color
+#   rgbctl music status|on|off        cava visualizer on the strip (rgbviz)
+#   rgbctl music mode [grow|mirror|spectrum]   read / set its layout
+#   rgbctl music gain [10-300]        read / set its sensitivity in percent
 #   rgbctl sync-now                   push the current theme's colors now
 
 set -eu
@@ -98,6 +101,33 @@ case "${1:-}" in
       off) rm -f "$state/follow-strip" ;;
     esac
     if [ -e "$state/follow-strip" ]; then echo on; else echo off; fi
+    ;;
+  music)
+    mkdir -p "$state"
+    pidfile="$state/viz.pid"
+    running() { [ -f "$pidfile" ] && kill -0 "$(cat "$pidfile")" 2>/dev/null; }
+    case "${2:-}" in
+      status) if running; then echo on; else echo off; fi ;;
+      on)
+        running && exit 0
+        rgbctl_host=$("$0" host)
+        setsid -f "$HOME/.local/bin/rgbviz" "$rgbctl_host" >/dev/null 2>&1 </dev/null
+        sleep 0.3
+        ;;
+      off)
+        if running; then kill "$(cat "$pidfile")" 2>/dev/null || true; fi
+        rm -f "$pidfile"
+        ;;
+      mode)
+        [ -n "${3:-}" ] && printf '%s\n' "$3" > "$state/viz-mode"
+        cat "$state/viz-mode" 2>/dev/null || echo grow
+        ;;
+      gain)
+        [ -n "${3:-}" ] && printf '%s\n' "$3" > "$state/viz-gain"
+        cat "$state/viz-gain" 2>/dev/null || echo 100
+        ;;
+      *) exit 2 ;;
+    esac
     ;;
   sync-now)
     exec "$HOME/.config/theme/theme" leds
