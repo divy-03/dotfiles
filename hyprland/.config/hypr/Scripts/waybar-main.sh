@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+# Already running (e.g. Super+H pressed twice): do nothing instead of stacking bars.
+pgrep -x waybar >/dev/null && exit 0
+
 config="${XDG_CONFIG_HOME:-$HOME/.config}/waybar/config"
 runtime_dir="${XDG_RUNTIME_DIR:-/tmp}"
 temporary_config="$(mktemp "$runtime_dir/waybar-config.XXXXXX")"
