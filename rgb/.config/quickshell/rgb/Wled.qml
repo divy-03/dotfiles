@@ -51,6 +51,9 @@ QtObject {
 
     function post(state) {
         state.v = false
+        // leftover realtime (HyperHDR) data would make WLED ignore the change
+        if (live)
+            state.live = false
         request("POST", "/json/state", state)
     }
 

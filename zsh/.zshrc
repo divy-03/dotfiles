@@ -185,3 +185,11 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
 
 # Added by Antigravity CLI installer
 export PATH="/home/divy/.local/bin:$PATH"
+
+# pnpm
+export PNPM_HOME="/home/divy/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end

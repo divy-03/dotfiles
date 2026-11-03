@@ -63,6 +63,11 @@ case "${1:-}" in
         ;;
       off)
         rpc '{"command":"componentstate","componentstate":{"component":"LEDDEVICE","state":false}}' >/dev/null || true
+        # HyperHDR stops sending but leaves WLED in realtime mode, which makes
+        # it ignore the JSON API until its timeout; release it explicitly.
+        sleep 0.3
+        curl -fsS --max-time 2 -H 'Content-Type: application/json' \
+          -X POST "http://$("$0" host)/json/state" --data '{"live":false,"v":false}' >/dev/null 2>&1 || true
         ;;
       *) exit 2 ;;
     esac
