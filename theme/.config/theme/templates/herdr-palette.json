@@ -1,0 +1,10 @@
+{
+  "name": "{{name}}",
+  "term_bg": "{{term_bg}}", "term_fg": "{{term_fg}}", "term_cursor": "{{term_cursor}}",
+  "text": "{{text}}", "overlay2": "{{overlay2}}", "subtext0": "{{subtext0}}", "subtext1": "{{subtext1}}",
+  "crust": "{{crust}}", "mantle": "{{mantle}}", "base": "{{base}}",
+  "surface0": "{{surface0}}", "surface1": "{{surface1}}", "surface2": "{{surface2}}",
+  "accent": "{{accent}}", "on_accent": "{{on_accent}}",
+  "ansi": ["{{color0}}", "{{color1}}", "{{color2}}", "{{color3}}", "{{color4}}", "{{color5}}", "{{color6}}", "{{color7}}",
+           "{{color8}}", "{{color9}}", "{{color10}}", "{{color11}}", "{{color12}}", "{{color13}}", "{{color14}}", "{{color15}}"]
+}

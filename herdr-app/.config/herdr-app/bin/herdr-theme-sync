@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""herdr-theme-sync: turn the desktop palette (matugen/theme script) into a herdr-app theme.
+
+Reads  ~/.cache/theme/herdr-palette.json   (rendered by ~/.config/theme/theme)
+Writes ~/.config/herdr-app/themes/dynamic*.json   (atomic; contrast-fixed to WCAG AA)
+Runs   herdr-app do app.theme '{"name":"dynamic..."}'   (skipped if herdr-app isn't running)
+
+Idempotent: an unchanged palette does nothing. Never fails the caller: exit 0 unless the
+palette itself is unusable. Modes (file bin/herdr-theme-sync.mode, or --mode):
+  inplace  rewrite themes/dynamic.json, then app.theme dynamic
+  ab       alternate themes/dynamic-a.json / dynamic-b.json (the fallback if herdr-app does
+           not re-read a rewritten theme file): the new colours go to the idle slot, one
+           app.theme switches to it, then the old slot is brought up to date.
+usage: herdr-theme-sync [--palette FILE] [--mode inplace|ab] [--force] [--no-apply] [--dry-run]
+"""
+import sys; sys.dont_write_bytecode = True
+import argparse, hashlib, json, os, subprocess, sys, time
+HERE = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, HERE)
+from herdr_theme_lib import audit, fit, from_hls, hls, lum, mix, ratio  # noqa: E402
+
+HOME = os.path.expanduser("~")
+APP = os.path.join(HOME, ".config/herdr-app")
+THEMES = os.path.join(APP, "themes")
+CACHE = os.path.join(HOME, ".cache/herdr-theme-sync")
+STATE = os.path.join(CACHE, "state.json")
+PALETTE = os.path.join(HOME, ".cache/theme/herdr-palette.json")
+MODE_FILE = os.path.join(HERE, "herdr-theme-sync.mode")
+
+# State colours keep their meaning in every theme: fixed hue anchors; only lightness
+# (and a saturation floor) adapt for contrast.
+ANCHOR = {"blocked": "#ff6b6b", "working": "#f5a623", "done": "#2fbf71"}
+
+
+def build(p):
+    bg = p["term_bg"].lower()
+    light = lum(bg) > 0.4
+    lighter = not light  # direction that gains contrast against bg
+    chrome, canvas = p["mantle"], p["crust"]
+    surf0, surf1, surf2 = p["surface0"], p["surface1"], p["surface2"]
+    surface = mix(bg, surf0, 0.5)
+    accent_raw = p["accent"]
+    selection = mix(bg, accent_raw, 0.28)
+    bgs = [bg, surface, chrome, selection, surf0]
+    fg = fit(p["term_fg"], bgs, 4.5, lighter)
+    # the selection must stay readable under foreground: pull it toward bg if not
+    for t in (0.28, 0.22, 0.16, 0.10, 0.05):
+        selection = mix(bg, accent_raw, t)
+        if ratio(fg, selection) >= 4.5:
+            break
+    text_bgs = [bg, surface, chrome]
+    accent = fit(accent_raw, text_bgs, 4.5, lighter)
+    accent_fg = fit(p.get("on_accent", bg), [accent], 4.5, not lighter)
+    muted = fit(p["subtext0"], text_bgs, 4.5, lighter)
+    dim = fit(p.get("overlay2", p["subtext0"]), text_bgs, 4.5, lighter)
+
+    def state(name):
+        h, l, s = hls(ANCHOR[name])
+        return fit(from_hls(h, (0.45 if light else 0.62), s), text_bgs, 4.5, lighter)
+
+    ansi = []
+    for i, c in enumerate(p["ansi"]):
+        c = c.lower()
+        if i == 0:
+            if ratio(fg, c) < 4.5 and ratio(c, bg) < 4.5:
+                c = fit(c, [fg], 4.5, light)  # a background-role black: keep fg readable on it
+        else:
+            c = fit(c, [bg], 4.5, lighter)
+        ansi.append(c)
+    colors = {
+        "accent": accent, "accent_foreground": accent_fg, "solid": accent, "solid_foreground": accent_fg,
+        "chrome": chrome, "canvas": canvas, "surface": surface, "popover": surf0, "raised": surf0,
+        "hover": surf1, "selected": selection, "border": surf1, "input": surf2,
+        "muted": muted, "dim": dim,
+        "working": state("working"), "blocked": state("blocked"), "done": state("done"),
+        "idle": dim, "unknown": fit(mix(dim, bg, 0.35), [bg], 3.0, lighter),
+    }
+    return {"background": bg, "foreground": fg, "selection": selection, "cursor": accent,
+            "ansi": ansi, "colors": colors}
+
+
+def atomic_write(path, text):
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        f.write(text)
+    os.replace(tmp, path)
+
+
+def load_state():
+    try:
+        return json.load(open(STATE))
+    except (OSError, ValueError):
+        return {}
+
+
+def herdr(*args, timeout=5):
+    exe = os.path.join(HOME, ".local/bin/herdr-app")
+    exe = exe if os.path.exists(exe) else "herdr-app"
+    try:
+        r = subprocess.run([exe, *args], capture_output=True, text=True, timeout=timeout)
+        return r.returncode == 0, (r.stdout + r.stderr).strip()
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return False, str(e)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--palette", default=PALETTE)
+    ap.add_argument("--mode", choices=["inplace", "ab"])
+    ap.add_argument("--force", action="store_true")
+    ap.add_argument("--no-apply", action="store_true")
+    ap.add_argument("--dry-run", action="store_true")
+    a = ap.parse_args()
+    mode = a.mode or (open(MODE_FILE).read().strip() if os.path.exists(MODE_FILE) else "inplace")
+
+    try:
+        pal = json.load(open(a.palette))
+        theme = build(pal)
+    except (OSError, ValueError, KeyError) as e:
+        print(f"herdr-theme-sync: unusable palette {a.palette}: {e}", file=sys.stderr)
+        return 1
+    res, fails = audit(theme)
+    if fails:
+        for l, f, b, m, r in fails:
+            print(f"herdr-theme-sync: FAIL {l} {f} on {b} = {r:.2f} < {m}", file=sys.stderr)
+        print("herdr-theme-sync: refusing to write a theme that fails AA; keeping the previous one", file=sys.stderr)
+        return 1
+    text = json.dumps(theme, indent=2) + "\n"
+    digest = hashlib.sha256(text.encode()).hexdigest()[:16]
+    if a.dry_run:
+        print(text, end="")
+        print(f"# {len(res)} pairs pass, min {min(r[4] for r in res):.2f}", file=sys.stderr)
+        return 0
+
+    os.makedirs(THEMES, exist_ok=True)
+    os.makedirs(CACHE, exist_ok=True)
+    st = load_state()
+    if st.get("hash") == digest and st.get("mode") == mode and not a.force:
+        return 0  # nothing changed: no writes, no app.theme, no flicker
+
+    if mode == "inplace":
+        atomic_write(os.path.join(THEMES, "dynamic.json"), text)
+        name, others = "dynamic", []
+    else:
+        cur = st.get("slot") or "b"
+        new = "a" if cur == "b" else "b"
+        name = f"dynamic-{new}"
+        atomic_write(os.path.join(THEMES, f"{name}.json"), text)
+        others = [os.path.join(THEMES, f"dynamic-{cur}.json")]
+
+    applied = False
+    if not a.no_apply:
+        ok, out = herdr("do", "app.theme", json.dumps({"name": name}))
+        applied = ok
+        if not ok:
+            # herdr-app not running (or busy): files are written, the next sync/start picks them up
+            print(f"herdr-theme-sync: wrote {name}, not applied ({out[:120]})", file=sys.stderr)
+    # keep the idle slot / mirrors current so a later start or a stale pointer shows the latest
+    for o in others:
+        time.sleep(1.0 if applied else 0)
+        atomic_write(o, text)
+    json.dump({"hash": digest, "mode": mode, "slot": name[-1] if mode == "ab" else None,
+               "applied": applied, "time": int(time.time())}, open(STATE, "w"))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
