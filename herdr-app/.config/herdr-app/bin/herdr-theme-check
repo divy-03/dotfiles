@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+"""WCAG contrast audit for herdr-app theme files (text pairs 4.5:1, cursor 3:1).
+usage: herdr-theme-check themes/foo.json [...]   -> exit 1 if any pair fails"""
+import sys; sys.dont_write_bytecode = True
+import json, os, sys
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+from herdr_theme_lib import audit
+
+def main(paths):
+    bad = 0
+    for p in paths:
+        res, fails = audit(json.load(open(p)))
+        print(f"{p}: {len(res)-len(fails)}/{len(res)} pairs pass, min {min(r[4] for r in res):.2f}")
+        for l, f, b, m, r in fails:
+            print(f"  FAIL {l}: {f} on {b} = {r:.2f} (< {m})")
+        bad += len(fails)
+    return 1 if bad else 0
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
