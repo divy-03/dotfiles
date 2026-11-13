@@ -50,7 +50,8 @@
     },
     "mpris": {
       "image-size": 76,
-      "image-radius": 10
+      "image-radius": 10,
+      "blacklist": ["playerctld"]
     },
     "buttons-grid#reminder": {
       "buttons-per-row": 1,

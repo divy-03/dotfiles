@@ -21,9 +21,7 @@
         "clock",
     ],
     "modules-right": [
-        "group/player",
         "tray",
-        "memory",
         "pulseaudio",
         "custom/rgb",
         "custom/swaync",

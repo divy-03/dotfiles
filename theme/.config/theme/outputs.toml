@@ -86,6 +86,10 @@ template = "quickshell-colors.qml"
 path = "~/.config/quickshell/rgb/Colors.qml"
 # quickshell reloads itself when its config changes
 
+[[output]]
+template = "quickshell-colors.qml"
+path = "~/.config/quickshell/bar/Colors.qml"
+
 # herdr-app: the palette is handed to herdr-theme-sync, which builds themes/dynamic*.json
 # (contrast-fixed, see ~/.config/herdr-app/README-theme.md) and tells herdr-app to use it.
 [[output]]
